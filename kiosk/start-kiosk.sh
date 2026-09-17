@@ -3,7 +3,7 @@
 # canteen feedback touch display. Point KIOSK_URL at wherever FoodRating.html
 # is hosted (a local file:// path, or the URL of your deployed site).
 
-KIOSK_URL="${KIOSK_URL:-http://localhost/FoodRating.html}"
+KIOSK_URL="${KIOSK_URL:-https://canteen-food-rating-system.pages.dev}"
 
 # Give the desktop/network a moment to come up on boot
 sleep 5
