@@ -2,13 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 
   <title>Menu Management</title>
   <style>
     /* Reset and base styles */
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial', sans-serif; }
+
+    html, body {
+      overscroll-behavior: none;
+      touch-action: manipulation;
+    }
 
     body {
       display: flex;
@@ -152,6 +160,154 @@
       z-index: 10;
     }
 
+    .sync-badge {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      z-index: 20;
+      cursor: pointer;
+    }
+
+    .sync-badge .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #28a745;
+    }
+
+    .sync-badge.offline .dot {
+      background: #dc3545;
+    }
+
+    .sync-badge.pending .dot {
+      background: #ff9800;
+    }
+
+    .sync-badge .spinner {
+      display: none;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(0, 123, 255, 0.25);
+      border-top-color: #007bff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .sync-badge.syncing .dot {
+      display: none;
+    }
+
+    .sync-badge.syncing .spinner {
+      display: block;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .ist-clock {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ffffff;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #333;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      z-index: 20;
+      white-space: nowrap;
+    }
+
+    .tab-bar {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      background: #eef4fa;
+      color: #4facfe;
+      font-weight: bold;
+      border-radius: 8px 8px 0 0;
+      padding: 10px 22px;
+    }
+
+    .tab-btn.active {
+      background: #4facfe;
+      color: #fff;
+    }
+
+    .tab-panel.hidden {
+      display: none;
+    }
+
+    .summary-cards {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .summary-card {
+      background: #f4f7f9;
+      border-radius: 10px;
+      padding: 15px 20px;
+      min-width: 160px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .summary-card .value {
+      font-size: 28px;
+      font-weight: bold;
+      color: #007bff;
+    }
+
+    .summary-card .label {
+      font-size: 13px;
+      color: #555;
+    }
+
+    .charts-row {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .chart-box {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 15px;
+      width: 380px;
+      max-width: 100%;
+    }
+
+    .app-footer {
+      position: fixed;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: #333;
+      z-index: 20;
+      white-space: nowrap;
+    }
+
     /* Responsive Styles */
     @media (max-width: 768px) {
       .menu-container{
@@ -195,14 +351,28 @@
         font-size: 18px;
         z-index: 10;
       }
+      .app-footer {
+        font-size: 10px;
+      }
     }
   </style>
 </head>
 <body>
+	<div id="sync-badge" class="sync-badge offline" title="Offline">
+		<span class="dot"></span>
+		<span class="spinner"></span>
+	</div>
+	<div id="ist-clock" class="ist-clock"></div>
 	<div class="menu-container">
-		<h2>Daily Menu Management</h2>
+		<h2>Canteen Admin</h2>
 		<button id="logoutBtn" style="margin-right:20px"><i class="bi bi-box-arrow-right"></i></button>
-		
+
+		<div class="tab-bar">
+			<button class="tab-btn active" id="tab-btn-menu" onclick="switchTab('menu')">Menu Management</button>
+			<button class="tab-btn" id="tab-btn-reports" onclick="switchTab('reports')">Reports</button>
+		</div>
+
+		<div id="tab-panel-menu" class="tab-panel">
 		<div class="form-row">
 			<label for="menu-date">Select Date:</label>
 			<input type="date" id="menu-date" />
@@ -236,8 +406,40 @@
 		<button onclick="submitMenu()">Submit Menu</button>
 		<button onclick="downloadJSON()">Download Daily Menus</button>
 		<button id="download-feedback">Download Feedback</button>
+		</div>
+
+		<div id="tab-panel-reports" class="tab-panel hidden">
+			<div class="summary-cards">
+				<div class="summary-card">
+					<div class="value" id="stat-total">0</div>
+					<div class="label">Total feedback entries</div>
+				</div>
+				<div class="summary-card">
+					<div class="value" id="stat-avg">0</div>
+					<div class="label">Average rating</div>
+				</div>
+				<div class="summary-card">
+					<div class="value" id="stat-top-complaint">-</div>
+					<div class="label">Most complained food item</div>
+				</div>
+			</div>
+			<div class="charts-row">
+				<div class="chart-box">
+					<canvas id="ratingChart"></canvas>
+				</div>
+				<div class="chart-box">
+					<canvas id="complaintChart"></canvas>
+				</div>
+			</div>
+			<button onclick="refreshReports()" style="margin-top: 20px;">Refresh Reports</button>
+			<button onclick="downloadJSON()">Download Daily Menus</button>
+			<button id="download-feedback-2">Download Feedback CSV</button>
+			<button onclick="runConnectionTest()">Test Supabase Connection</button>
+		</div>
 	</div>
 
+
+  	<script src="assets/js/supabase-sync.js"></script>
   	<script>
 		const menuTableBody = document.getElementById('menu-table-body');
 		const selectedDateElement = document.getElementById('menu-date');
@@ -245,16 +447,108 @@
 		let dailyMenus = JSON.parse(localStorage.getItem('dailyMenus')) || {}; 
 		let allFoodItems = JSON.parse(localStorage.getItem('allFoodItems')) || [];
 
+		// Sync status badge
+		const syncBadge = document.getElementById("sync-badge");
+		function updateSyncBadge(status) {
+			const online = status ? status.online : navigator.onLine;
+			const pending = status ? status.pending : JSON.parse(localStorage.getItem("pendingSupabaseOps") || "[]").length;
+			const flushing = status ? status.flushing : false;
+			syncBadge.classList.toggle("offline", !online);
+			syncBadge.classList.toggle("syncing", online && flushing);
+			syncBadge.classList.toggle("pending", online && !flushing && pending > 0);
+			syncBadge.title = !online
+				? `Offline${pending ? ` \u2013 ${pending} queued` : ""}`
+				: flushing ? "Syncing\u2026" : pending ? `${pending} item(s) waiting to sync` : "Online";
+		}
+		onSyncStatusChange(updateSyncBadge);
+		window.addEventListener("online", () => updateSyncBadge());
+		window.addEventListener("offline", () => updateSyncBadge());
+
+		// Tap the badge to see why items are stuck
+		syncBadge.addEventListener("click", () => {
+			const pending = JSON.parse(localStorage.getItem("pendingSupabaseOps") || "[]").length;
+			const lastError = getLastSupabaseError();
+			if (!pending && !lastError) {
+				alert("Everything is synced to Supabase.");
+				return;
+			}
+			let msg = `${pending} item(s) waiting to sync to Supabase.`;
+			if (lastError) {
+				msg += `\n\nLast error (${lastError.at}):\n${lastError.context}\n${lastError.message || ""}`;
+				if (lastError.hint) msg += `\nHint: ${lastError.hint}`;
+				if (lastError.code) msg += `\nCode: ${lastError.code}`;
+			}
+			alert(msg);
+		});
+
+		async function runConnectionTest() {
+			const result = await testSupabaseConnection();
+			if (result.ok) {
+				alert("Connected! Reads/writes to Supabase are working.");
+			} else {
+				const err = result.error || {};
+				alert(
+					"Supabase connection failed at step: " + result.step + "\n" +
+					(err.message || "Unknown error") +
+					(err.hint ? `\nHint: ${err.hint}` : "") +
+					(err.code ? `\nCode: ${err.code}` : "") +
+					"\n\nOpen the browser console for full details, and check that supabase/schema.sql has been run."
+				);
+			}
+		}
+
+		// Live IST clock, independent of the device's own timezone/locale
+		const istClock = document.getElementById("ist-clock");
+		const istFormatter = new Intl.DateTimeFormat("en-IN", {
+			timeZone: "Asia/Kolkata",
+			day: "2-digit",
+			month: "short",
+			year: "numeric",
+			hour: "2-digit",
+			minute: "2-digit",
+			second: "2-digit",
+			hour12: true
+		});
+		function updateIstClock() {
+			istClock.textContent = istFormatter.format(new Date());
+		}
+		updateIstClock();
+		setInterval(updateIstClock, 1000);
+
+		function switchTab(tab) {
+			document.getElementById('tab-panel-menu').classList.toggle('hidden', tab !== 'menu');
+			document.getElementById('tab-panel-reports').classList.toggle('hidden', tab !== 'reports');
+			document.getElementById('tab-btn-menu').classList.toggle('active', tab === 'menu');
+			document.getElementById('tab-btn-reports').classList.toggle('active', tab === 'reports');
+			if (tab === 'reports') refreshReports();
+		}
+
 		// Load menu items for the selected date
 		selectedDateElement.addEventListener('change', loadMenu);
-		document.addEventListener('DOMContentLoaded', loadMenu);
+		document.addEventListener('DOMContentLoaded', async () => {
+			updateSyncBadge();
+			// Pull the master food catalog from Supabase, falling back to the local cache offline
+			const cloudFoodItems = await cloudFetchAllFoodItems();
+			if (cloudFoodItems) {
+				allFoodItems = cloudFoodItems;
+				localStorage.setItem('allFoodItems', JSON.stringify(allFoodItems));
+			}
+			loadMenu();
+		});
 
-		function loadMenu() {
+		async function loadMenu() {
 			const selectedDate = selectedDateElement.value;
 			menuTableBody.innerHTML = '';
 
 			// Save the selected date to localStorage
 			localStorage.setItem('selectedMenuDate', selectedDate);
+
+			// Try Supabase first for this date's menu, falling back to the local cache offline
+			if (selectedDate) {
+				const cloudItems = await cloudFetchDailyMenu(selectedDate);
+				if (cloudItems) dailyMenus[selectedDate] = cloudItems;
+			}
+			localStorage.setItem('dailyMenus', JSON.stringify(dailyMenus));
 
 			// Get the selected items for the day
 			const selectedItemsForDate = dailyMenus[selectedDate] || [];
@@ -339,8 +633,10 @@
 			const selectedDate = selectedDateElement.value;
 
 			if (item && !allFoodItems.includes(item)) {
-				allFoodItems.push(item.charAt(0).toUpperCase() + item.slice(1));
+				const formattedItem = item.charAt(0).toUpperCase() + item.slice(1);
+				allFoodItems.push(formattedItem);
 				localStorage.setItem('allFoodItems', JSON.stringify(allFoodItems));
+				cloudUpsertFoodItem(formattedItem);
 
 				// After adding the item, load the menu again to ensure checkboxes are correct
 				loadMenu();
@@ -362,6 +658,7 @@
 
 			localStorage.setItem('allFoodItems', JSON.stringify(allFoodItems));
 			localStorage.setItem('dailyMenus', JSON.stringify(dailyMenus));
+			cloudDeleteFoodItem(item);
 			loadMenu();
 		}
 
@@ -393,6 +690,7 @@
 
 			dailyMenus[selectedDate] = selectedItems;
 			localStorage.setItem('dailyMenus', JSON.stringify(dailyMenus));
+			cloudUpsertDailyMenu(selectedDate, selectedItems);
 			alert("Menu for " + selectedDate + " has been updated!");
 		}
 
@@ -431,29 +729,47 @@
 			document.body.removeChild(downloadLink);
 		}
 
-		document.getElementById("download-feedback").addEventListener("click", function () {
-			const feedbackData = JSON.parse(localStorage.getItem("canteenFeedback")) || [];
+		document.getElementById("download-feedback").addEventListener("click", exportFeedbackCsv);
+		document.getElementById("download-feedback-2").addEventListener("click", exportFeedbackCsv);
 
-			if (feedbackData.length === 0) {
+		// Normalize a local canteenFeedback entry (rating-only / reasons / goodFood shapes) into flat rows
+		function normalizeLocalFeedback() {
+			const raw = JSON.parse(localStorage.getItem("canteenFeedback")) || [];
+			const rows = [];
+			raw.forEach(entry => {
+				if (entry.reasons && entry.reasons.length > 0) {
+					entry.reasons.forEach(r => rows.push({ date: entry.date, rating: entry.rating, type: 'reason', foodItem: r.foodItem, reason: r.reason }));
+				} else if (Array.isArray(entry.goodFood) && entry.goodFood.length > 0) {
+					entry.goodFood.forEach(item => rows.push({ date: entry.date, rating: entry.rating, type: 'good_food', foodItem: item, reason: null }));
+				} else {
+					rows.push({ date: entry.date, rating: entry.rating, type: 'rating_only', foodItem: null, reason: null });
+				}
+			});
+			return rows;
+		}
+
+		// Fetch feedback from Supabase; fall back to the local cache when offline
+		async function getAllFeedback() {
+			const cloudRows = await cloudFetchFeedback();
+			if (cloudRows) {
+				return cloudRows.map(r => ({ date: r.feedback_date, rating: r.rating, type: r.feedback_type, foodItem: r.food_item, reason: r.reason }));
+			}
+			return normalizeLocalFeedback();
+		}
+
+		async function exportFeedbackCsv() {
+			const rows = await getAllFeedback();
+
+			if (rows.length === 0) {
 				alert("No feedback available to download.");
 				return;
 			}
 
-			// Convert the data to CSV format
 			let csvContent = "Date,Rating,Food Item,Reason\n";
-			feedbackData.forEach(entry => {
-				if (entry.reasons && entry.reasons.length > 0) {
-					entry.reasons.forEach(reason => {
-						csvContent += `${entry.date},${entry.rating},"${reason.foodItem}","${reason.reason}"\n`;
-					});
-				} else if (Array.isArray(entry.goodFood) && entry.goodFood.length > 0) {
-					entry.goodFood.forEach(item => {
-						csvContent += `${entry.date},${entry.rating},"${item}","-"\n`;
-					});
-				}
+			rows.forEach(row => {
+				csvContent += `${row.date},${row.rating},"${row.foodItem || '-'}","${row.reason || '-'}"\n`;
 			});
 
-			// Create a blob and trigger a download
 			const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
 			const link = document.createElement("a");
 			link.href = URL.createObjectURL(blob);
@@ -462,7 +778,50 @@
 			document.body.appendChild(link);
 			link.click();
 			document.body.removeChild(link);
-		});
+		}
+
+		// ---------- Reports dashboard ----------
+		let ratingChartInstance, complaintChartInstance;
+
+		async function refreshReports() {
+			const rows = await getAllFeedback();
+
+			document.getElementById('stat-total').textContent = rows.length;
+
+			const avg = rows.length ? (rows.reduce((sum, r) => sum + (r.rating || 0), 0) / rows.length) : 0;
+			document.getElementById('stat-avg').textContent = avg.toFixed(1);
+
+			const complaintCounts = {};
+			rows.filter(r => r.type === 'reason' && r.foodItem).forEach(r => {
+				complaintCounts[r.foodItem] = (complaintCounts[r.foodItem] || 0) + 1;
+			});
+			const sortedComplaints = Object.entries(complaintCounts).sort((a, b) => b[1] - a[1]);
+			document.getElementById('stat-top-complaint').textContent = sortedComplaints.length ? sortedComplaints[0][0] : '-';
+
+			const ratingCounts = [1, 2, 3, 4, 5].map(r => rows.filter(row => row.rating === r).length);
+			const topComplaints = sortedComplaints.slice(0, 5);
+
+			if (ratingChartInstance) ratingChartInstance.destroy();
+			ratingChartInstance = new Chart(document.getElementById('ratingChart'), {
+				type: 'bar',
+				data: {
+					labels: ['1', '2', '3', '4', '5'],
+					datasets: [{ label: 'Feedback count', data: ratingCounts, backgroundColor: '#4facfe' }]
+				},
+				options: { responsive: true, plugins: { title: { display: true, text: 'Rating Distribution' } } }
+			});
+
+			if (complaintChartInstance) complaintChartInstance.destroy();
+			complaintChartInstance = new Chart(document.getElementById('complaintChart'), {
+				type: 'bar',
+				data: {
+					labels: topComplaints.map(e => e[0]),
+					datasets: [{ label: 'Complaints', data: topComplaints.map(e => e[1]), backgroundColor: '#dc3545' }]
+				},
+				options: { indexAxis: 'y', responsive: true, plugins: { title: { display: true, text: 'Top Complaints by Food Item' } } }
+			});
+		}
   </script>
+  <div class="app-footer">Built with <strong>❤️</strong> by <strong>Hirotec Team India</strong></div>
 </body>
 </html>

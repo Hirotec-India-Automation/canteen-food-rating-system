@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     	<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/shim.min.js"></script>
     	<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -85,11 +86,19 @@
     button:hover {
       background-color: #007bff;
     }
+
+    .app-footer {
+      position: fixed;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: #333;
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
-  <button id="rating-next" onclick="redirectToHome" style="position: relative; left: 20px; top: 30px;" disabled><i class="fa-solid fa-angle-right"></i></button>
-
   <div class="login-container">
     <h2>Login</h2>
     <div class="form-row">
@@ -117,7 +126,11 @@
         alert("Invalid username or password.");
       }
     }
-    
+
+    document.getElementById('password').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') login();
+    });
   </script>
+  <div class="app-footer">Built with <strong>❤️</strong> by <strong>Hirotec Team India</strong></div>
 </body>
 </html>
