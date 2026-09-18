@@ -18,6 +18,9 @@
     html, body {
       overscroll-behavior: none;
       touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
     }
 
     body {
@@ -90,29 +93,38 @@
 
     button {
       margin-left: 10px;
-      padding: 10px 20px;
+      padding: 12px 20px;
       background-color: #4facfe;
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 8px;
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
-      transition: 0.3s;
+      transition: background 0.2s, transform 0.12s;
     }
 
-    button:hover {
+    button:active {
       background-color: #007bff;
+      transform: scale(0.96);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      button:hover { background-color: #007bff; }
     }
 
     .bulk-delete-btn {
       background-color: #f44336;
       margin-top: 15px;
-      transition: 0.3s;
     }
 
-    .bulk-delete-btn:hover {
+    .bulk-delete-btn:active {
       background-color: #e53935;
+      transform: scale(0.96);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .bulk-delete-btn:hover { background-color: #e53935; }
     }
 
     .table-container {
@@ -121,7 +133,12 @@
       margin-top: 20px;
       border-radius: 8px;
       border: 1px solid #ddd;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
+
+    .table-container::-webkit-scrollbar { display: none; }
 
     table {
       width: 100%;
@@ -129,7 +146,7 @@
     }
 
     th, td {
-      padding: 12px;
+      padding: 14px 12px;
       border: 1px solid #ddd;
       text-align: center;
       background: #fff;
@@ -143,35 +160,77 @@
       text-align: center;
       top: 0;
       z-index: 1;
+      font-size: 15px;
     }
+
+    td { font-size: 18px; }
 
     .checkbox-cell {
       text-align: center;
     }
 
+    .checkbox-cell input[type="checkbox"],
+    .food-checkbox {
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      transform: scale(1.2);
+    }
+
     .action-btn {
-      background: none;
+      background: #f44336;
+      color: #fff;
       border: none;
-      color: #000;
+      border-radius: 6px;
+      padding: 8px 16px;
       cursor: pointer;
       font-size: 14px;
-      transition: color 0.1s;
+      font-weight: bold;
+      transition: background 0.15s, transform 0.12s;
     }
 
-    .action-btn:hover {
-      color: #fff;
+    .action-btn:active {
+      background: #e53935;
+      transform: scale(0.94);
     }
+
+    @media (hover: hover) and (pointer: fine) {
+      .action-btn:hover { background: #e53935; }
+    }
+
+    .admin-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .admin-header h2 { margin: 0; }
 
     #logoutBtn {
-      left: 440px;
-      position: relative;
-      top: -60px;
       background: none;
-      border: none;
-      color: black;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      color: #333;
       cursor: pointer;
-      font-size: 28px;
-      z-index: 10;
+      font-size: 24px;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      transition: background 0.15s, transform 0.12s;
+    }
+
+    #logoutBtn:active {
+      background: #f44336;
+      color: #fff;
+      transform: scale(0.92);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      #logoutBtn:hover { background: #f44336; color: #fff; }
     }
 
     .sync-badge {
@@ -255,8 +314,11 @@
       color: #4facfe;
       font-weight: bold;
       border-radius: 8px 8px 0 0;
-      padding: 10px 22px;
+      padding: 12px 22px;
+      font-size: 16px;
     }
+
+    .tab-btn:active { transform: scale(0.96); }
 
     .tab-btn.active {
       background: #4facfe;
@@ -358,13 +420,7 @@
         padding: 10px;
         font-size: 0.9em;
       }
-      #logoutBtn {
-        left: 240px;
-        position: relative;
-        top: -53px;
-        font-size: 18px;
-        z-index: 10;
-      }
+      #logoutBtn { width: 42px; height: 42px; font-size: 20px; }
       .app-footer {
         font-size: 10px;
       }
@@ -378,8 +434,11 @@
 	</div>
 	<div id="ist-clock" class="ist-clock"></div>
 	<div class="menu-container">
-		<h2>Canteen Admin</h2>
-		<button id="logoutBtn" style="margin-right:20px"><i class="bi bi-box-arrow-right"></i></button>
+		<div class="admin-header">
+			<div style="width: 48px;"></div>
+			<h2>Canteen Admin</h2>
+			<button id="logoutBtn"><i class="bi bi-box-arrow-right"></i></button>
+		</div>
 
 		<div class="tab-bar">
 			<button class="tab-btn active" id="tab-btn-menu" onclick="switchTab('menu')">Menu Management</button>
