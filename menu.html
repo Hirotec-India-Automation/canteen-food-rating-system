@@ -60,7 +60,7 @@
       margin-right: 40px;
     }
 
-    input[type="date"], input[type="text"] {
+    input[type="date"], input[type="month"], input[type="text"] {
       flex-grow: 1; /* Allow input to take available space */
       padding: 10px;
       border: 2px solid #ddd;
@@ -69,9 +69,21 @@
       transition: border-color 0.3s;
     }
 
-    input[type="date"]:focus, input[type="text"]:focus {
+    input[type="date"]:focus, input[type="month"]:focus, input[type="text"]:focus {
       border-color: #056cc6;
       outline: none;
+    }
+
+    select {
+      flex-grow: 1;
+      padding: 10px;
+      border: 2px solid #ddd;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+
+    .hidden {
+      display: none;
     }
 
     button {
@@ -409,6 +421,16 @@
 		</div>
 
 		<div id="tab-panel-reports" class="tab-panel hidden">
+			<div class="form-row">
+				<label for="report-type">Report Type:</label>
+				<select id="report-type" onchange="onReportTypeChange()">
+					<option value="all">All Time</option>
+					<option value="daily">Daily</option>
+					<option value="monthly">Monthly</option>
+				</select>
+				<input type="date" id="report-date" class="hidden" onchange="refreshReports()" />
+				<input type="month" id="report-month" class="hidden" onchange="refreshReports()" />
+			</div>
 			<div class="summary-cards">
 				<div class="summary-card">
 					<div class="value" id="stat-total">0</div>
@@ -432,9 +454,9 @@
 				</div>
 			</div>
 			<button onclick="refreshReports()" style="margin-top: 20px;">Refresh Reports</button>
-			<button onclick="downloadJSON()">Download Daily Menus</button>
+			<button onclick="downloadJSON()">Download Daily Menu</button>
 			<button id="download-feedback-2">Download Feedback CSV</button>
-			<button onclick="runConnectionTest()">Test Supabase Connection</button>
+			<button onclick="runConnectionTest()">Test Connection</button>
 		</div>
 	</div>
 
@@ -783,8 +805,38 @@
 		// ---------- Reports dashboard ----------
 		let ratingChartInstance, complaintChartInstance;
 
+		// Default the daily/monthly filters to today so switching the report type has a sensible value
+		document.getElementById('report-date').value = new Date().toISOString().split('T')[0];
+		document.getElementById('report-month').value = new Date().toISOString().slice(0, 7);
+
+		function onReportTypeChange() {
+			const type = document.getElementById('report-type').value;
+			document.getElementById('report-date').classList.toggle('hidden', type !== 'daily');
+			document.getElementById('report-month').classList.toggle('hidden', type !== 'monthly');
+			refreshReports();
+		}
+
+		// Returns the inclusive {start, end} YYYY-MM-DD range for the selected report type, or null for all time
+		function getReportDateRange() {
+			const type = document.getElementById('report-type').value;
+			if (type === 'daily') {
+				const d = document.getElementById('report-date').value;
+				return d ? { start: d, end: d } : null;
+			}
+			if (type === 'monthly') {
+				const m = document.getElementById('report-month').value;
+				if (!m) return null;
+				const [year, month] = m.split('-').map(Number);
+				const lastDay = new Date(year, month, 0).getDate();
+				return { start: `${m}-01`, end: `${m}-${String(lastDay).padStart(2, '0')}` };
+			}
+			return null;
+		}
+
 		async function refreshReports() {
-			const rows = await getAllFeedback();
+			const allRows = await getAllFeedback();
+			const range = getReportDateRange();
+			const rows = range ? allRows.filter(r => r.date >= range.start && r.date <= range.end) : allRows;
 
 			document.getElementById('stat-total').textContent = rows.length;
 
