@@ -16,6 +16,7 @@
 				margin: 0;
 				padding: 0;
 				font-family: Arial, sans-serif;
+				-webkit-tap-highlight-color: transparent;
 			}
 
 			html, body {
@@ -32,7 +33,6 @@
 				min-height: 100vh;
 				background: linear-gradient(135deg, #4facfe, #00f2fe);
 				color: #000;
-				cursor: none;
 			}
 			.hidden {
 				display: none;
@@ -77,11 +77,13 @@
 				transition: transform 0.3s ease, color 0.3s ease;
 			}
 
-			.emoji-label:hover {
-				transform: scale(1.2);
-				background-color: #007bff;
-				width: 140px;
-				border-radius: 80%;
+			@media (hover: hover) and (pointer: fine) {
+				.emoji-label:hover {
+					transform: scale(1.2);
+					background-color: #007bff;
+					width: 140px;
+					border-radius: 80%;
+				}
 			}
 
 			.rating-options input[type="radio"]:checked + .emoji-label {
@@ -135,9 +137,11 @@
 				width: 85%;
 			}
 
-			.good-food-options label:hover {
-				background-color: #007bff;
-				padding: 5px;
+			@media (hover: hover) and (pointer: fine) {
+				.good-food-options label:hover {
+					background-color: #007bff;
+					padding: 5px;
+				}
 			}
 
 			.good-food-options input[type="checkbox"] {
@@ -168,8 +172,10 @@
 				cursor: not-allowed;
 			}
 
-			button:hover:not(:disabled) {
-				background-color: #005BAB;
+			@media (hover: hover) and (pointer: fine) {
+				button:hover:not(:disabled) {
+					background-color: #005BAB;
+				}
 			}
 
 			.custom-alert {
@@ -218,8 +224,10 @@
 				transition: background-color 0.3s;
 			}
 
-			.alert-buttons button:hover { 
-				background-color: #005BAB; 
+			@media (hover: hover) and (pointer: fine) {
+				.alert-buttons button:hover { 
+					background-color: #005BAB; 
+				}
 			}
 
 			.nav-buttons-container {
@@ -335,6 +343,34 @@
 				to { transform: rotate(360deg); }
 			}
 
+			.idle-timer {
+				position: fixed;
+				top: 16px;
+				right: 16px;
+				background: rgba(0, 0, 0, 0.65);
+				color: #ffffff;
+				padding: 6px 14px;
+				border-radius: 20px;
+				font-size: 13px;
+				z-index: 25;
+				white-space: nowrap;
+			}
+
+			.app-logo {
+				position: fixed;
+				top: 10px;
+				left: 50%;
+				transform: translateX(-50%);
+				height: 48px;
+				z-index: 21;
+				pointer-events: none;
+			}
+
+			.thank-you-smiley {
+				display: block;
+				margin: 0 auto 10px;
+			}
+
 			/* IST clock: fixed overlay, doesn't affect the flex-centered container layout */
 			.ist-clock {
 				position: fixed;
@@ -414,6 +450,9 @@
 				.app-footer {
 					font-size: 10px;
 				}
+				.app-logo {
+					height: 32px;
+				}
 				#rating-next {
 					position: relative;
 					left: 425px;
@@ -447,7 +486,9 @@
   			<span class="dot"></span>
   			<span class="spinner"></span>
   		</div>
+  		<img src="images/logo.png" alt="Logo" class="app-logo">
   		<div id="ist-clock" class="ist-clock"></div>
+  		<div id="idle-timer-badge" class="idle-timer hidden">Auto-submitting in <span id="idle-timer-count">15</span>s</div>
   		<div id="user-icon" style="position: fixed; top: 20px; right: 20px;">
     		<a href="ratingLogin.html">
       		<i class="fas fa-user" style="font-size: 24px; cursor: pointer;"></i>
@@ -475,6 +516,7 @@
 		</div>
 
 		<div id="thank-you-screen" class="container hidden">
+			<img src="images/5.png" alt="" class="thank-you-smiley" width="150" height="150">
 			<h2 id="message"></h2>
 		</div>
 
@@ -539,7 +581,64 @@
 			const alertYesButton = document.getElementById("alert-yes");
 			const alertNoButton = document.getElementById("alert-no");
 			const ratingNext = document.getElementById("rating-next");
-			
+			const idleTimerBadge = document.getElementById("idle-timer-badge");
+			const idleTimerCount = document.getElementById("idle-timer-count");
+
+			// Screens that auto-submit (if something is selected) or return to the rating screen after 15s of inactivity
+			const IDLE_TIMEOUT_SECONDS = 15;
+			const IDLE_TIMER_SCREENS = ["food-screen", "more-feedback-screen"];
+			let idleCountdownInterval = null;
+			let idleActiveScreen = null;
+			let idleSecondsLeft = IDLE_TIMEOUT_SECONDS;
+
+			function stopIdleTimer() {
+				if (idleCountdownInterval) {
+					clearInterval(idleCountdownInterval);
+					idleCountdownInterval = null;
+				}
+				idleActiveScreen = null;
+				idleTimerBadge.classList.add("hidden");
+			}
+
+			function startIdleTimer(screenId) {
+				stopIdleTimer();
+				idleActiveScreen = screenId;
+				idleSecondsLeft = IDLE_TIMEOUT_SECONDS;
+				idleTimerCount.textContent = idleSecondsLeft;
+				idleTimerBadge.classList.remove("hidden");
+				idleCountdownInterval = setInterval(() => {
+					idleSecondsLeft--;
+					idleTimerCount.textContent = idleSecondsLeft;
+					if (idleSecondsLeft <= 0) {
+						const timedOutScreen = idleActiveScreen;
+						stopIdleTimer();
+						handleIdleTimeout(timedOutScreen);
+					}
+				}, 1000);
+			}
+
+			// Any tap/click on the current idle-timed screen restarts its countdown
+			function resetIdleTimer() {
+				if (idleActiveScreen) startIdleTimer(idleActiveScreen);
+			}
+			document.addEventListener("click", resetIdleTimer, true);
+
+			function handleIdleTimeout(screenId) {
+				if (screenId === "food-screen") {
+					if (document.querySelectorAll(".reason-checkbox:checked").length > 0) {
+						submitFoodReasonsButton.click();
+					} else {
+						resetForm();
+					}
+				} else if (screenId === "more-feedback-screen") {
+					if (document.querySelectorAll(".good-food-option:checked").length > 0) {
+						submitGoodFeedbackButton.click();
+					} else {
+						resetForm();
+					}
+				}
+			}
+
 			document.addEventListener('DOMContentLoaded', async function() {
 				const foodItemsForToday = await getTodayMenuItems();
 				populateFoodReasonTable(foodItemsForToday);
@@ -672,6 +771,12 @@
 			function navigateTo(screenId) {
 				document.querySelectorAll(".container").forEach(screen => screen.classList.add("hidden"));
 				document.getElementById(screenId).classList.remove("hidden");
+
+				if (IDLE_TIMER_SCREENS.includes(screenId)) {
+					startIdleTimer(screenId);
+				} else {
+					stopIdleTimer();
+				}
 			}
 
 			// Function to show the "more feedback" screen
@@ -687,15 +792,15 @@
 
 				let message = "Thank you for your feedback!";
 				if (ratingValue === 5) {
-					message = "Amazing feedback! We're glad you enjoyed it. Thank you! 😁";
+					message = "Amazing feedback! We're glad you enjoyed it. Thank you!";
 				} else if (ratingValue === 4) {
-					message = "Great! We will try to make it better. Thank you! 😄";
+					message = "Great! We will try to make it better. Thank you!";
 				} else if (ratingValue === 3) {
-					message = "Thanks! We will keep improving. Thank you! 😊";
+					message = "Thanks! We will keep improving. Thank you!";
 				} else if (ratingValue === 2) {
-					message = "Sorry to hear that. We'll work on it. Thank you! 🤗";
+					message = "Sorry to hear that. We'll work on it. Thank you!";
 				} else if (ratingValue === 1) {
-					message = "We apologize for the experience. Thank you! 😔";
+					message = "We apologize for the experience. Thank you!";
 				}
 				messageDiv.innerHTML = `<span class="emoji-message">${message}</span>`;
 
