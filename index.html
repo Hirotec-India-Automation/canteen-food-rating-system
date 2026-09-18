@@ -611,7 +611,7 @@
 	</div>
 
 	<!-- ===== Custom Alert ===== -->
-	<div id="custom-alert" class="custom-alert">
+	<div id="custom-alert" class="custom-alert hidden">
 		<div class="custom-alert-container">
 			<h3 id="alert-message">Would you like to provide more details?</h3>
 			<div class="alert-buttons">
@@ -784,11 +784,13 @@
 
 		alertYesButton.addEventListener("click", () => {
 			customAlert.classList.remove("active");
+			customAlert.classList.add("hidden");
 			showMoreFeedbackScreen();
 		});
 
 		alertNoButton.addEventListener("click", () => {
 			customAlert.classList.remove("active");
+			customAlert.classList.add("hidden");
 			ratingScreen.classList.add("hidden");
 			userIcon.classList.add("hidden");
 			const feedbackData = {
@@ -805,7 +807,10 @@
 			showThankYouScreen(ratingValue);
 		});
 
-		function showCustomAlert() { customAlert.classList.add("active"); }
+		function showCustomAlert() {
+			customAlert.classList.remove("hidden");
+			customAlert.classList.add("active");
+		}
 
 		function navigateTo(screenId) {
 			document.querySelectorAll(".container").forEach(screen => screen.classList.add("hidden"));
