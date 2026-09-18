@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/shim.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
   <title>Menu Management</title>
   <style>
@@ -401,6 +403,13 @@
 			<button onclick="addMenuItem()" id="addMenuBtn">Add Item</button>
 		</div>
 
+		<div class="form-row">
+			<label for="menu-upload">Bulk Upload (Week/Month):</label>
+			<input type="file" id="menu-upload" accept=".csv,.xlsx,.xls" />
+			<button onclick="downloadMenuTemplate()">Download Template</button>
+			<button onclick="uploadMenuFile()">Upload Menu</button>
+		</div>
+
 		<div class="table-container">
 			<table>
 				<thead>
@@ -727,6 +736,82 @@
 		document.getElementById('logoutBtn').addEventListener('click', () => {
 			window.location.href = 'index.html';
 		});
+
+		// Builds a fillable Date / Food Item template covering a sample week for bulk menu upload
+		function downloadMenuTemplate() {
+			const sampleRows = [
+				{ Date: '2026-09-22', 'Food Item': 'Idli' },
+				{ Date: '2026-09-22', 'Food Item': 'Sambar' },
+				{ Date: '2026-09-23', 'Food Item': 'Dosa' },
+				{ Date: '2026-09-23', 'Food Item': 'Chutney' }
+			];
+			const worksheet = XLSX.utils.json_to_sheet(sampleRows);
+			const workbook = XLSX.utils.book_new();
+			XLSX.utils.book_append_sheet(workbook, worksheet, 'Menu');
+			XLSX.writeFile(workbook, 'menu_template.xlsx');
+		}
+
+		// Excel serial dates are read back as JS Date objects (cellDates:true); everything else stays text
+		function normalizeTemplateDate(value) {
+			if (value instanceof Date) {
+				return value.toISOString().split('T')[0];
+			}
+			return String(value).trim();
+		}
+
+		// Reads an uploaded Excel/CSV file with Date + Food Item columns and applies it across all the dates found
+		async function uploadMenuFile() {
+			const fileInput = document.getElementById('menu-upload');
+			const file = fileInput.files[0];
+			if (!file) {
+				alert('Please choose an Excel or CSV file first.');
+				return;
+			}
+
+			const data = await file.arrayBuffer();
+			const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+			const sheet = workbook.Sheets[workbook.SheetNames[0]];
+			const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+			const menusByDate = {};
+			rows.forEach(row => {
+				const dateKey = Object.keys(row).find(k => k.toLowerCase().trim() === 'date');
+				const itemKey = Object.keys(row).find(k => k.toLowerCase().trim() === 'food item');
+				if (!dateKey || !itemKey) return;
+
+				const date = normalizeTemplateDate(row[dateKey]);
+				const item = String(row[itemKey]).trim();
+				if (!date || !item) return;
+
+				if (!menusByDate[date]) menusByDate[date] = [];
+				if (!menusByDate[date].includes(item)) menusByDate[date].push(item);
+			});
+
+			const dateCount = Object.keys(menusByDate).length;
+			if (dateCount === 0) {
+				alert('No valid rows found. The sheet needs "Date" and "Food Item" columns.');
+				return;
+			}
+
+			for (const [date, items] of Object.entries(menusByDate)) {
+				dailyMenus[date] = items;
+				cloudUpsertDailyMenu(date, items);
+
+				items.forEach(item => {
+					if (!allFoodItems.includes(item)) {
+						allFoodItems.push(item);
+						cloudUpsertFoodItem(item);
+					}
+				});
+			}
+
+			localStorage.setItem('dailyMenus', JSON.stringify(dailyMenus));
+			localStorage.setItem('allFoodItems', JSON.stringify(allFoodItems));
+
+			fileInput.value = '';
+			loadMenu();
+			alert(`Menu uploaded for ${dateCount} date(s).`);
+		}
 
 		function downloadJSON() {
 			// Retrieve all daily menus from localStorage
