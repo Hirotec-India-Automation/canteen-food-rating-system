@@ -21,7 +21,7 @@ CHROMIUM_BIN=$(command -v chromium-browser || command -v chromium)
 exec "$CHROMIUM_BIN" \
   --kiosk \
   --incognito \
-  --noerrdialogs \
+  --noerrdialogs \ac
   --disable-infobars \
   --disable-session-crashed-bubble \
   --disable-pinch \
