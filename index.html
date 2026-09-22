@@ -1170,13 +1170,17 @@
 
     /* ---------- Bottom action bar ---------- */
     .action-bar {
-      display: flex; gap: 18px; justify-content: center;
+			display: flex; gap: 18px; justify-content: center;
+			position: sticky; bottom: 0; z-index: 5;
+			padding: 12px 0 4px;
+			background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,.96) 28%);
     }
     .btn {
       border: none; border-radius: 16px; cursor: pointer;
-      min-height: 76px; padding: 0 44px;
+			min-height: 84px; padding: 0 44px;
       font-size: clamp(20px, 2.6vw, 28px); font-weight: 700;
       transition: transform .1s ease, background-color .15s ease, opacity .15s ease;
+			touch-action: manipulation;
     }
     .btn:active { transform: scale(.97); }
     .btn-primary { background: #007bff; color: #fff; min-width: min(420px, 56%); }
@@ -1203,8 +1207,9 @@
     @media (max-width: 640px) {
       .screen { padding: 64px 14px 84px; }
       #screen-rating { padding-left: 8px; padding-right: 8px; }
-      .btn { min-height: 66px; padding: 0 26px; }
-      .btn-ghost { min-width: 140px; }
+			.action-bar { gap: 10px; padding-bottom: 8px; }
+			.btn { min-height: 78px; padding: 0 18px; flex: 1; }
+			.btn-ghost { min-width: 0; }
       .app-logo { height: 30px; }
     }
   </style>
