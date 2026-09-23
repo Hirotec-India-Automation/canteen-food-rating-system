@@ -663,38 +663,39 @@
       thanksImg.src = ratingValue === 1 ? 'images/2.png' : `images/${ratingValue}.png`;
       thanksMsg.textContent = msgs[ratingValue] || 'Thank you for your feedback!';
       playCompletionSound();
-      refreshFeedbackCount(); // update count immediately after each submission
+      incrementFeedbackCount(); // +1 immediately — no async needed
       showScreen('screen-thanks');
       setTimeout(resetToRating, 3000);
     }
 
     /* ---------- Today's feedback count ---------- */
-    async function refreshFeedbackCount() {
+    let todayCount = 0;
+    const feedbackCountEl = document.getElementById('feedback-count');
+
+    function incrementFeedbackCount() {
+      todayCount++;
+      feedbackCountEl.textContent = todayCount;
+    }
+
+    function initFeedbackCount() {
+      // Seed from localStorage synchronously so the count is correct on boot
       const today = new Date().toISOString().split('T')[0];
-      let count = 0;
-      try {
-        if (typeof cloudFetchFeedback === 'function') {
-          const rows = await cloudFetchFeedback();
-          if (rows) {
-            // count distinct submissions by grouping on (feedback_date, created_at or rowid)
-            // since each submission may produce multiple rows, count unique rating-only + good_food + reason entries per date
-            // simplest reliable way: count rows where feedback_date = today
-            count = rows.filter(r => r.feedback_date === today).length;
-            // if every submission writes N rows (one per food item), we want submission count not row count
-            // use rating_only rows as 1 submission, others grouped — but we don't have a session id
-            // fallback: just show row count with a label, or use local storage for exact submission count
-          }
-        }
-      } catch (e) { /* offline */ }
-
-      // Always also check local storage for offline submissions today
       const local = JSON.parse(localStorage.getItem('canteenFeedback') || '[]');
-      const localToday = local.filter(e => e.date === today).length;
+      todayCount = local.filter(e => e.date === today).length;
+      feedbackCountEl.textContent = todayCount;
 
-      // Use whichever is larger (cloud may already include local once synced)
-      count = Math.max(count, localToday);
-
-      document.getElementById('feedback-count').textContent = count;
+      // Then silently try Supabase in the background and update if higher
+      // (handles the case where another device submitted while this one was offline)
+      if (typeof cloudFetchFeedback === 'function') {
+        cloudFetchFeedback().then(rows => {
+          if (!rows) return;
+          const cloudToday = rows.filter(r => r.feedback_date === today).length;
+          if (cloudToday > todayCount) {
+            todayCount = cloudToday;
+            feedbackCountEl.textContent = todayCount;
+          }
+        }).catch(() => {});
+      }
     }
 
     function resetToRating() {
@@ -733,7 +734,7 @@
         buildLikedList(items);
         buildReasonList(items);
       }
-      refreshFeedbackCount();
+      initFeedbackCount();
     });
 
     /* ---------- IST clock ---------- */
