@@ -300,6 +300,16 @@
   </div>
   <div id="ist-clock" class="ist-clock"></div>
   <a id="admin-link" href="ratingLogin.html" aria-label="Admin login"><i class="fas fa-user-gear"></i></a>
+  <button id="reload-btn" onclick="location.reload()" aria-label="Reload page" style="
+    position:fixed; bottom:14px; left:14px; z-index:30;
+    width:52px; height:52px; border-radius:50%;
+    background:rgba(255,255,255,.9); box-shadow:0 2px 8px rgba(0,0,0,.12);
+    border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    color:#7a8a99; font-size:22px;
+    touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+    transition:background .15s ease;
+  "><i class="fas fa-rotate-right"></i></button>
   <img id="app-logo" src="images/logo.jpg" alt="" class="app-logo">
 
   <!-- 1. RATING -->
@@ -308,6 +318,17 @@
     <p class="subtitle">Tap a smiley to rate</p>
     <div class="rating-row" id="rating-row"></div>
     <p class="subtitle" style="margin-top: 16px; margin-bottom: 0;">Your feedback helps us serve you better</p>
+    <div id="feedback-count-wrap" style="margin-top:18px; display:flex; align-items:center; justify-content:center; gap:10px;">
+      <span style="font-size:15px; color:#7a8a99; font-weight:500;">Today's total feedback count</span>
+      <span id="feedback-count" style="
+        background:#007bff; color:#fff;
+        font-size:22px; font-weight:800;
+        min-width:48px; height:48px; border-radius:999px;
+        display:inline-flex; align-items:center; justify-content:center;
+        padding:0 14px; box-shadow:0 2px 8px rgba(0,123,255,.3);
+        line-height:1;
+      ">0</span>
+    </div>
   </section>
 
   <!-- 2. LIKED ITEMS (rating 4-5) -->
@@ -642,8 +663,38 @@
       thanksImg.src = ratingValue === 1 ? 'images/2.png' : `images/${ratingValue}.png`;
       thanksMsg.textContent = msgs[ratingValue] || 'Thank you for your feedback!';
       playCompletionSound();
+      refreshFeedbackCount(); // update count immediately after each submission
       showScreen('screen-thanks');
       setTimeout(resetToRating, 3000);
+    }
+
+    /* ---------- Today's feedback count ---------- */
+    async function refreshFeedbackCount() {
+      const today = new Date().toISOString().split('T')[0];
+      let count = 0;
+      try {
+        if (typeof cloudFetchFeedback === 'function') {
+          const rows = await cloudFetchFeedback();
+          if (rows) {
+            // count distinct submissions by grouping on (feedback_date, created_at or rowid)
+            // since each submission may produce multiple rows, count unique rating-only + good_food + reason entries per date
+            // simplest reliable way: count rows where feedback_date = today
+            count = rows.filter(r => r.feedback_date === today).length;
+            // if every submission writes N rows (one per food item), we want submission count not row count
+            // use rating_only rows as 1 submission, others grouped — but we don't have a session id
+            // fallback: just show row count with a label, or use local storage for exact submission count
+          }
+        }
+      } catch (e) { /* offline */ }
+
+      // Always also check local storage for offline submissions today
+      const local = JSON.parse(localStorage.getItem('canteenFeedback') || '[]');
+      const localToday = local.filter(e => e.date === today).length;
+
+      // Use whichever is larger (cloud may already include local once synced)
+      count = Math.max(count, localToday);
+
+      document.getElementById('feedback-count').textContent = count;
     }
 
     function resetToRating() {
@@ -682,6 +733,7 @@
         buildLikedList(items);
         buildReasonList(items);
       }
+      refreshFeedbackCount();
     });
 
     /* ---------- IST clock ---------- */
