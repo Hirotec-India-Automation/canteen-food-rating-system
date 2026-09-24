@@ -17,7 +17,9 @@
 const SUPABASE_URL = "https://kjrxmtwuwxrkqnvyezvs.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqcnhtdHd1d3hya3FudnllenZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzNzM3MDMsImV4cCI6MjA5MDk0OTcwM30.sFNN6YfxDy-m16LNAVUte6id3JRoHstCXnoX6JxYByc";
 
-const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+/* assets/js/supabase-sync.js */
+
+const sbClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 const PENDING_OPS_KEY = "pendingSupabaseOps";
 const syncStatusListeners = [];
@@ -33,7 +35,7 @@ function notifyStatus() {
 }
 
 function getPendingOps() {
-  return JSON.parse(localStorage.getItem(PENDING_OPS_KEY)) || [];
+  return JSON.parse(localStorage.getItem(PENDING_OPS_KEY) || "[]");
 }
 
 function setPendingOps(queue) {
@@ -48,7 +50,9 @@ function queueOp(op) {
 }
 
 async function runOp(op) {
+  if (!sbClient) throw new Error("Supabase client not initialized");
   const table = sbClient.from(op.table);
+  
   if (op.type === "insert") {
     const { error } = await table.insert(op.payload);
     if (error) throw error;
@@ -104,11 +108,6 @@ async function flushPendingOps() {
   setPendingOps(remaining);
 }
 
-// Postgrest errors carry message/details/hint/code — log all of it, since
-// "failed to fetch" (network/CORS) looks nothing like "relation does not
-// exist" (schema not created) or "new row violates row-level security" (RLS).
-// Also saved to localStorage so it can be inspected on a touchscreen kiosk
-// with no keyboard/devtools access (see getLastSupabaseError()).
 function logSupabaseError(context, err) {
   const details = {
     context,
@@ -126,10 +125,6 @@ function getLastSupabaseError() {
   return JSON.parse(localStorage.getItem("lastSupabaseError") || "null");
 }
 
-// Quick self-test you can run from the browser console (or a debug button) to
-// confirm the URL/key/schema/RLS are all correctly set up. Does a real
-// insert+delete round trip against `feedback`, since read access (RLS "select")
-// can be fine while write access (RLS "insert") is separately misconfigured.
 async function testSupabaseConnection() {
   let step = "read feedback";
   try {
@@ -163,8 +158,6 @@ async function testSupabaseConnection() {
 
 window.addEventListener("online", flushPendingOps);
 document.addEventListener("DOMContentLoaded", flushPendingOps);
-// Retry queued writes periodically in case they failed for a reason other than
-// being offline (e.g. a transient server error), without spinning forever.
 setInterval(flushPendingOps, 30000);
 
 // ---------- Feedback ----------
@@ -186,13 +179,13 @@ async function cloudFetchFeedback() {
   }
 }
 
-// ---------- Daily menu ----------
+// ---------- Daily Menu ----------
 async function cloudUpsertDailyMenu(date, items, mealType = 'lunch') {
   return saveOrQueue({
     table: "daily_menu",
     type: "upsert",
     conflictKey: "menu_date,meal_type",
-    payload: { menu_date: date, meal_type: mealType, items, updated_at: new Date().toISOString() }
+    payload: { menu_date: date, meal_type: mealType, food_items: items }
   });
 }
 
@@ -200,33 +193,30 @@ async function cloudFetchDailyMenu(date, mealType = 'lunch') {
   try {
     if (!navigator.onLine) throw new Error("offline");
 
-    // Try with meal_type filter first (new schema)
     const { data, error } = await sbClient
       .from("daily_menu")
-      .select("items")
+      .select("food_items")
       .eq("menu_date", date)
       .eq("meal_type", mealType)
       .maybeSingle();
 
-    // If the column doesn't exist yet (PGRST error or similar), fall back to
-    // querying without meal_type so old-schema deployments keep working
     if (error) {
       const { data: fallback, error: err2 } = await sbClient
         .from("daily_menu")
-        .select("items")
+        .select("food_items")
         .eq("menu_date", date)
         .maybeSingle();
       if (err2) throw err2;
-      return fallback ? fallback.items : null;
+      return fallback ? fallback.food_items : null;
     }
 
-    return data ? data.items : null;
+    return data ? data.food_items : null;
   } catch (err) {
     return null;
   }
 }
 
-// ---------- Food items ----------
+// ---------- Food Catalog ----------
 async function cloudUpsertFoodItem(name) {
   return saveOrQueue({
     table: "food_items",

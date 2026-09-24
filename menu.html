@@ -384,6 +384,11 @@
 	<div class="menu-container">
 		<h2>Canteen Admin</h2>
 		<button id="logoutBtn" style="margin-right:20px"><i class="bi bi-box-arrow-right"></i></button>
+		<button id="backBtn" onclick="window.location.href='index.html'" title="Back to kiosk"
+			style="position:relative; left:380px; top:-60px; background:none; border:none;
+			       color:black; cursor:pointer; font-size:28px; z-index:10;">
+			<i class="bi bi-arrow-left-circle"></i>
+		</button>
 
 		<div class="tab-bar">
 			<button class="tab-btn active" id="tab-btn-menu" onclick="switchTab('menu')">Menu Management</button>
@@ -603,11 +608,18 @@
 
 			if (selectedDate) {
 				const cloudItems = await cloudFetchDailyMenu(selectedDate, currentMealType);
-				if (cloudItems) dailyMenus[mealKey(selectedDate, currentMealType)] = cloudItems;
+				if (cloudItems) {
+					// Store under both the new keyed format and plain date (backward compat)
+					dailyMenus[mealKey(selectedDate, currentMealType)] = cloudItems;
+					localStorage.setItem('dailyMenus', JSON.stringify(dailyMenus));
+				}
 			}
-			localStorage.setItem('dailyMenus', JSON.stringify(dailyMenus));
 
-			const selectedItemsForDate = dailyMenus[mealKey(selectedDate, currentMealType)] || [];
+			// Check new key first, then fall back to old plain-date key
+			const selectedItemsForDate =
+				dailyMenus[mealKey(selectedDate, currentMealType)] ||
+				dailyMenus[selectedDate] || [];
+
 			allFoodItems.forEach((item, index) => {
 				createMenuRow(item, index, selectedItemsForDate);
 			});

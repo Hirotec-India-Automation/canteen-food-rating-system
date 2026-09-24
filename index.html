@@ -99,6 +99,17 @@
       padding: 10px 32px; font-size: clamp(22px, 3.5vw, 36px); font-weight: 800;
       margin-bottom: 12px; box-shadow: 0 4px 14px rgba(0,102,204,.3);
     }
+    /* Rating screen idle timer bar */
+    #rating-timer-bar-wrap {
+      width: 60%; max-width: 400px; height: 6px;
+      background: #dde9f5; border-radius: 999px;
+      margin-top: 16px; overflow: hidden;
+    }
+    #rating-timer-bar {
+      height: 100%; background: #0066cc; border-radius: 999px;
+      width: 100%;
+      transition: width 1s linear;
+    }
     #screen-rating h1 {
       font-size: clamp(32px, 5vw, 56px);
       color: #0a2540; font-weight: 800; text-align: center; margin-bottom: 4px;
@@ -337,12 +348,15 @@
   <!-- 1. MAIN RATING SCREEN -->
   <div id="screen-rating">
     <div class="rating-header">
-      <div id="meal-badge">🍱 <span id="meal-badge-text">Lunch</span></div>
+      <div id="meal-badge"><i class="fas fa-sun" id="meal-badge-icon"></i> <span id="meal-badge-text">Lunch</span></div>
       <h1>How was your meal today?</h1>
       <p class="subtitle">Tap a smiley to rate</p>
     </div>
     <div class="rating-row" id="rating-row"></div>
     <p class="hint">Your feedback helps us serve you better</p>
+    <div id="rating-timer-bar-wrap">
+      <div id="rating-timer-bar"></div>
+    </div>
   </div>
 
   <!-- 2. LIKED MENU SCREEN -->
