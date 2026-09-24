@@ -1,23 +1,7 @@
-/*
- * Shared Supabase client + offline-first sync engine.
- * Used by FoodRating.html and menu.html. Requires the supabase-js CDN script
- * to be loaded on the page before this file.
- *
- * How offline-first works:
- *  - Every write goes through saveOrQueue(). If we're online and the request
- *    succeeds, it's done. If we're offline or the request fails, the write is
- *    queued in localStorage (key: pendingSupabaseOps).
- *  - On page load, and whenever the browser fires the "online" event, the
- *    queue is flushed automatically (flushPendingOps).
- *  - Reads (cloudFetch*) try Supabase first and fall back to the caller's
- *    localStorage cache when offline or on error, so the app keeps working
- *    without a connection.
- */
+/* assets/js/supabase-sync.js */
 
 const SUPABASE_URL = "https://kjrxmtwuwxrkqnvyezvs.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqcnhtdHd1d3hya3FudnllenZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzNzM3MDMsImV4cCI6MjA5MDk0OTcwM30.sFNN6YfxDy-m16LNAVUte6id3JRoHstCXnoX6JxYByc";
-
-/* assets/js/supabase-sync.js */
 
 const sbClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
@@ -185,7 +169,7 @@ async function cloudUpsertDailyMenu(date, items, mealType = 'lunch') {
     table: "daily_menu",
     type: "upsert",
     conflictKey: "menu_date,meal_type",
-    payload: { menu_date: date, meal_type: mealType, food_items: items }
+    payload: { menu_date: date, meal_type: mealType, items: items }
   });
 }
 
@@ -195,7 +179,7 @@ async function cloudFetchDailyMenu(date, mealType = 'lunch') {
 
     const { data, error } = await sbClient
       .from("daily_menu")
-      .select("food_items")
+      .select("items")
       .eq("menu_date", date)
       .eq("meal_type", mealType)
       .maybeSingle();
@@ -203,14 +187,14 @@ async function cloudFetchDailyMenu(date, mealType = 'lunch') {
     if (error) {
       const { data: fallback, error: err2 } = await sbClient
         .from("daily_menu")
-        .select("food_items")
+        .select("items")
         .eq("menu_date", date)
         .maybeSingle();
       if (err2) throw err2;
-      return fallback ? fallback.food_items : null;
+      return fallback ? fallback.items : null;
     }
 
-    return data ? data.food_items : null;
+    return data ? data.items : null;
   } catch (err) {
     return null;
   }

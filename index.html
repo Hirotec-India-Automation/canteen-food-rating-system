@@ -57,7 +57,6 @@
     }
     #reload-btn:active { background: #dbe9f5; }
 
-    /* Back Button on Feedback Screens */
     #back-btn {
       position: fixed; top: 60px; left: 14px; z-index: 60;
       background: #ffffff; border: none; cursor: pointer;
@@ -78,7 +77,6 @@
       font-size: 14px; color: #0a2540; font-weight: 700; white-space: nowrap;
     }
 
-    /* ── Main Rating Screen (Smileys Card) ───────── */
     #screen-rating {
       background: #ffffff;
       box-shadow: 0 16px 40px rgba(0, 30, 70, 0.25);
@@ -99,7 +97,6 @@
       padding: 10px 32px; font-size: clamp(22px, 3.5vw, 36px); font-weight: 800;
       margin-bottom: 12px; box-shadow: 0 4px 14px rgba(0,102,204,.3);
     }
-    /* Rating screen idle timer bar */
     #rating-timer-bar-wrap {
       width: 60%; max-width: 400px; height: 6px;
       background: #dde9f5; border-radius: 999px;
@@ -144,7 +141,6 @@
       font-size: clamp(16px, 2.2vw, 24px); color: #4a6572; text-align: center; font-weight: 700;
     }
 
-    /* ── Sub-screens (Liked & Reasons) ───────────────── */
     .sel-screen {
       display: none; flex-direction: column;
       width: 100vw; height: 100vh;
@@ -177,7 +173,6 @@
       display: flex; align-items: center; gap: 12px; z-index: 50; flex-shrink: 0;
     }
 
-    /* Standalone Timer Badge Outside Buttons */
     .timer-badge-outside {
       background: rgba(255, 255, 255, 0.95);
       color: #0a2540;
@@ -216,7 +211,6 @@
       overflow-y: auto; display: flex; align-items: center; justify-content: center;
     }
 
-    /* ── WORD CLOUD LAYOUT ── */
     #liked-grid {
       display: flex; flex-wrap: wrap;
       gap: 16px 20px; align-items: center; justify-content: center;
@@ -254,7 +248,6 @@
     }
     .food-chip.on .fc-check { background: rgba(255,255,255,.3); border-color: transparent; color: #ffffff; }
 
-    /* ── REASON ROWS ── */
     #reason-grid {
       display: flex; flex-direction: column;
       gap: 10px; width: 100%; height: 100%;
@@ -289,7 +282,6 @@
     .r-chip:active { background: #d0e4ff; }
     .r-chip.on { background: #0066cc; border-color: #004080; color: #ffffff; }
 
-    /* ── Thank You Screen ───────────────────────────────────── */
     #screen-thanks {
       display: none; flex-direction: column;
       align-items: center; justify-content: center; text-align: center;
@@ -303,7 +295,6 @@
       text-shadow: 0 2px 8px rgba(0,20,50,0.4);
     }
 
-    /* ── APP FOOTER ───────────────────────────────── */
     .app-footer {
       position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%);
       font-size: clamp(18px, 2.5vw, 26px); font-weight: 800; color: #000000;
@@ -345,7 +336,6 @@
     Today:&nbsp;<span id="feedback-count" style="font-size:18px;font-weight:800;color:#0066cc;">0</span>
   </div>
 
-  <!-- 1. MAIN RATING SCREEN -->
   <div id="screen-rating">
     <div class="rating-header">
       <div id="meal-badge"><i class="fas fa-sun" id="meal-badge-icon"></i> <span id="meal-badge-text">Lunch</span></div>
@@ -359,7 +349,6 @@
     </div>
   </div>
 
-  <!-- 2. LIKED MENU SCREEN -->
   <div id="screen-liked" class="sel-screen">
     <div class="screen-header-bar">
       <div class="screen-header-title-inline">
@@ -379,7 +368,6 @@
     </div>
   </div>
 
-  <!-- 3. HELP US IMPROVE SCREEN -->
   <div id="screen-reasons" class="sel-screen">
     <div class="screen-header-bar">
       <div class="screen-header-title-inline">
@@ -399,7 +387,6 @@
     </div>
   </div>
 
-  <!-- 4. THANK YOU SCREEN -->
   <div id="screen-thanks">
     <img id="thanks-img" src="images/5.png" alt="">
     <p id="thanks-msg">Thank you for your feedback!</p>
@@ -435,18 +422,33 @@
 
     const TIMED = ['screen-liked', 'screen-reasons'];
 
+    // Helper function to format strings to PascalCase
+    function toPascalCase(str) {
+      if (!str) return '';
+      return str
+        .toLowerCase()
+        .split(/[\s_-]+/)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+
     function getISTDate() {
-      return new Intl.DateTimeFormat('en-CA', {
+      const now = new Date();
+      const parts = new Intl.DateTimeFormat('en-IN', {
         timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
-      }).format(new Date());
+      }).formatToParts(now);
+      const year = parts.find(p => p.type === 'year').value;
+      const month = parts.find(p => p.type === 'month').value;
+      const day = parts.find(p => p.type === 'day').value;
+      return `${year}-${month}-${day}`;
     }
 
     function getCurrentMealType() {
       const parts = new Intl.DateTimeFormat('en-IN', {
         timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false
       }).formatToParts(new Date());
-      const h = parseInt(parts.find(p => p.type === 'hour').value);
-      const m = parseInt(parts.find(p => p.type === 'minute').value);
+      const h = parseInt(parts.find(p => p.type === 'hour').value, 10);
+      const m = parseInt(parts.find(p => p.type === 'minute').value, 10);
       return (h * 60 + m) >= 1110 ? 'dinner' : 'lunch';
     }
 
@@ -493,7 +495,6 @@
     function stopIdle() { clearInterval(idleInterval); idleInterval = null; }
     document.addEventListener('pointerdown', () => { if (currentScreen) startIdle(currentScreen); }, true);
 
-    /* ── Render Smileys ── */
     const ratingRow = document.getElementById('rating-row');
     const SMILEYS = [
       { v: 5, label: 'Loved it' },
@@ -529,10 +530,8 @@
       stopIdle(); saveRatingOnly(); showThanks();
     }
 
-    /* ── LOCAL STORAGE & BACKGROUND AUTO-SYNC ── */
     function appendLocal(key, data) {
       const arr = JSON.parse(localStorage.getItem(key) || '[]');
-      // Mark record with sync status flag
       data._synced = false;
       data._timestamp = Date.now();
       arr.push(data); 
@@ -547,7 +546,7 @@
       }
     }
 
-    function markLocalAsSynced(rows) {
+    function markLocalAsSynced() {
       const local = JSON.parse(localStorage.getItem('canteenFeedback') || '[]');
       let updated = false;
       local.forEach(entry => {
@@ -559,7 +558,6 @@
       if (updated) localStorage.setItem('canteenFeedback', JSON.stringify(local));
     }
 
-    /* Periodic Background Auto-Sync Timer (Runs every 30 seconds) */
     async function syncUnsentLocalFeedback() {
       if (typeof cloudSaveFeedback !== 'function') return;
       
@@ -585,7 +583,7 @@
       try {
         await cloudSaveFeedback(payload);
         markLocalAsSynced();
-        initFeedbackCount(); // Refresh live count after background sync
+        initFeedbackCount();
       } catch (err) {
         console.warn('Background auto-sync failed, retrying on next interval...', err);
       }
@@ -630,41 +628,42 @@
       showThanks();
     }
 
-    /* ── Render Liked Items ── */
     function buildLikedGrid(items) {
       likedGrid.innerHTML = '';
       const sizes = ['word-size-lg', 'word-size-md', 'word-size-sm'];
       const tilts = ['tilt-left', 'tilt-right', 'tilt-none'];
 
       items.forEach((item, idx) => {
+        const pascalItem = toPascalCase(item);
         const chip = document.createElement('button');
         chip.type = 'button';
         const sizeClass = sizes[idx % sizes.length];
         const tiltClass = tilts[idx % tilts.length];
         chip.className = `food-chip ${sizeClass} ${tiltClass}`;
-        chip.dataset.item = item;
-        chip.innerHTML = `<span class="fc-check"><i class="fas fa-check"></i></span>${item}`;
+        chip.dataset.item = pascalItem;
+        chip.innerHTML = `<span class="fc-check"><i class="fas fa-check"></i></span>${pascalItem}`;
         chip.addEventListener('click', () => chip.classList.toggle('on'));
         likedGrid.appendChild(chip);
       });
     }
 
-    /* ── Render Menu Items & Feedback Reasons ── */
     function buildReasonGrid(items) {
       reasonGrid.innerHTML = '';
       items.forEach(item => {
+        const pascalItem = toPascalCase(item);
         const row = document.createElement('div');
-        row.className = 'reason-row'; row.dataset.food = item;
+        row.className = 'reason-row'; row.dataset.food = pascalItem;
         
         const name = document.createElement('div');
-        name.className = 'reason-row-name'; name.textContent = item;
+        name.className = 'reason-row-name'; name.textContent = pascalItem;
         
         const chips = document.createElement('div');
         chips.className = 'reason-chips';
         REASONS_LIST.forEach(r => {
+          const pascalReason = toPascalCase(r);
           const chip = document.createElement('button');
           chip.type = 'button'; chip.className = 'r-chip';
-          chip.dataset.reason = r; chip.textContent = r;
+          chip.dataset.reason = pascalReason; chip.textContent = pascalReason;
           chip.addEventListener('click', () => {
             chip.classList.toggle('on');
             row.classList.toggle('on', !!row.querySelector('.r-chip.on'));
@@ -742,7 +741,7 @@
           }
         }
       } catch (e) {}
-      return cache[cacheKey] || [];
+      return cache[cacheKey] || cache[today] || [];
     }
 
     function incrementFeedbackCount() { todayCount++; feedbackCountEl.textContent = todayCount; }
@@ -759,7 +758,6 @@
             todayCount = cloudTodayCount;
             feedbackCountEl.textContent = todayCount;
 
-            // If database is cleared/empty, clear local cache to match live DB
             if (cloudTodayCount === 0) {
               const cleanedLocal = JSON.parse(localStorage.getItem('canteenFeedback') || '[]')
                                       .filter(e => e.date !== today);
@@ -794,10 +792,7 @@
         buildReasonGrid(items);
       }
 
-      // Initialize background periodic auto-sync every 30 seconds
       setInterval(syncUnsentLocalFeedback, 30000);
-      
-      // Auto-sync whenever online connectivity is restored
       window.addEventListener('online', syncUnsentLocalFeedback);
     });
   </script>

@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    	<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/shim.min.js"></script>
-    	<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/shim.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
   <title>Login</title>
   <style>
     /* Reset and base styles */
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial', sans-serif; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
 
     body {
       display: flex;
@@ -20,11 +20,65 @@
       min-height: 100vh;
       background: linear-gradient(135deg, #4facfe, #00f2fe);
       color: #000;
+      position: relative;
+    }
+
+    /* Fixed top navigation bar controls */
+    .top-bar {
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+    }
+
+    #back-btn {
+      background: #ffffff;
+      border: none;
+      cursor: pointer;
+      padding: 10px 20px;
+      border-radius: 999px;
+      box-shadow: 0 4px 14px rgba(0,0,0,.2);
+      font-size: 16px;
+      font-weight: 800;
+      color: #0056b3;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      touch-action: manipulation;
+      transition: background .15s, transform .15s;
+      text-decoration: none;
+    }
+
+    #back-btn:active {
+      background: #e6f0fa;
+      transform: scale(.96);
+    }
+
+    .timer-badge {
+      background: rgba(255, 255, 255, 0.95);
+      color: #0a2540;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .timer-badge i {
+      color: #d97706;
     }
 
     .login-container {
       text-align: center;
-      width: 100%;
+      width: 90%;
       max-width: 400px;
       padding: 30px;
       background: #fff;
@@ -50,14 +104,14 @@
       font-size: 18px;
       font-weight: bold;
       color: #333;
-      width: 30%; /* Adjust width for label */
-      text-align: right; /* Align labels to the right */
-      margin-right: 10px; /* Space between label and input */
+      width: 30%;
+      text-align: right;
+      margin-right: 10px;
     }
 
     input[type="text"],
     input[type="password"] {
-      flex-grow: 1; /* Allow input to take available space */
+      flex-grow: 1;
       padding: 10px;
       border: 2px solid #ddd;
       border-radius: 5px;
@@ -71,7 +125,7 @@
       outline: none;
     }
 
-    button {
+    button.login-btn {
       padding: 10px 20px;
       background-color: #4facfe;
       color: white;
@@ -81,9 +135,11 @@
       font-weight: bold;
       cursor: pointer;
       transition: 0.3s;
+      width: 100%;
+      margin-top: 10px;
     }
 
-    button:hover {
+    button.login-btn:hover {
       background-color: #007bff;
     }
 
@@ -99,6 +155,16 @@
   </style>
 </head>
 <body>
+
+  <div class="top-bar">
+    <a id="back-btn" href="index.html">
+      <i class="fas fa-arrow-left"></i> Back
+    </a>
+    <div class="timer-badge">
+      <i class="fas fa-clock"></i> <span id="timer-val">15</span>s
+    </div>
+  </div>
+
   <div class="login-container">
     <h2>Login</h2>
     <div class="form-row">
@@ -109,18 +175,52 @@
       <label for="password">Password:</label>
       <input type="password" id="password" placeholder="Enter password" />
     </div>
-    <button onclick="login()">Login</button>
+    <button class="login-btn" onclick="login()">Login</button>
   </div>
 
   <script>
+    const IDLE_SECS = 15;
+    let idleSecsLeft = IDLE_SECS;
+    let idleInterval = null;
+
+    function startTimer() {
+      stopTimer();
+      idleSecsLeft = IDLE_SECS;
+      document.getElementById('timer-val').textContent = idleSecsLeft;
+
+      idleInterval = setInterval(() => {
+        idleSecsLeft--;
+        document.getElementById('timer-val').textContent = idleSecsLeft;
+
+        if (idleSecsLeft <= 0) {
+          stopTimer();
+          window.location.href = "index.html";
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (idleInterval) {
+        clearInterval(idleInterval);
+        idleInterval = null;
+      }
+    }
+
+    function resetTimer() {
+      startTimer();
+    }
+
+    // Reset timer on any user interaction
+    ['pointerdown', 'keydown', 'input'].forEach(evt => {
+      document.addEventListener(evt, resetTimer, true);
+    });
+
     function login() {
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value.trim();
 
-      // Dummy credentials check (replace this with your actual login logic)
       if (username === "admin" && password === "pass") {
         alert("Login successful!");
-        // Redirect to menu management page (menuManagement.html)
         window.location.href = "menu.html";
       } else {
         alert("Invalid username or password.");
@@ -130,7 +230,11 @@
     document.getElementById('password').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') login();
     });
+
+    // Start timer on initial page load
+    startTimer();
   </script>
+
   <div class="app-footer">Built with <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle;display:inline-block;margin:0 2px"><path fill="#e03535" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> by <strong>Hirotec Team India</strong></div>
 </body>
 </html>
