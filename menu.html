@@ -269,18 +269,22 @@
 
     .summary-cards {
       display: flex;
-      gap: 15px;
-      flex-wrap: wrap;
+      gap: 12px;
+      flex-wrap: nowrap;
       justify-content: center;
+      align-items: stretch;
       margin-bottom: 20px;
+      overflow-x: auto;
     }
 
     .summary-card {
       background: #f4f7f9;
       border-radius: 10px;
-      padding: 15px 20px;
-      min-width: 160px;
+      padding: 12px 18px;
+      min-width: 140px;
+      flex: 1;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      white-space: nowrap;
     }
 
     .summary-card .value {

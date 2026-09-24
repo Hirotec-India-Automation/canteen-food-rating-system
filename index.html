@@ -22,10 +22,11 @@
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       background: linear-gradient(135deg, #4facfe, #00f2fe);
+      min-height: 100%;
     }
     .hidden { display: none !important; }
 
-    /* ── Fixed overlays ─────────────────────────────────────── */
+    /* ── Fixed Overlays ─────────────────────────────────────── */
     .ist-clock {
       position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
       background: rgba(255,255,255,.85); padding: 8px 18px; border-radius: 18px;
@@ -54,6 +55,19 @@
       touch-action: manipulation; transition: background .15s ease;
     }
     #reload-btn:active { background: #dbe9f5; }
+
+    /* Back Button on Feedback Screens */
+    #back-btn {
+      position: fixed; top: 14px; left: 14px; z-index: 60;
+      background: rgba(255,255,255,.92); border: none; cursor: pointer;
+      padding: 10px 18px; border-radius: 999px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.15);
+      font-size: 16px; font-weight: 700; color: #123a5c;
+      display: flex; align-items: center; gap: 8px;
+      touch-action: manipulation; transition: background .15s, transform .15s;
+    }
+    #back-btn:active { background: #dbe9f5; transform: scale(.96); }
+
     #feedback-count-wrap {
       position: fixed; bottom: 14px; left: 14px; z-index: 30;
       display: flex; align-items: center; gap: 8px;
@@ -63,131 +77,169 @@
       font-size: 13px; color: #5a6b7c; font-weight: 600; white-space: nowrap;
     }
 
-    /* ── Rating card (screen 1) ─────────────────────────────── */
+    /* ── Main Rating Screen (Smileys Card) ───────── */
     #screen-rating {
-      background: #fff; border-radius: 28px;
-      box-shadow: 0 12px 32px rgba(20,60,100,.22);
-      padding: 4vh 4vw 3vh;
-      display: flex; flex-direction: column; align-items: center;
-      width: min(95vw, 900px);
+      background: #fff;
+      box-shadow: 0 12px 32px rgba(0, 40, 80, 0.22);
+      border-radius: 24px;
+      padding: 2vh 2vw;
+      display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+      width: 94vw; height: 90vh;
+      position: relative; z-index: 10;
+    }
+    .rating-header {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      width: 100%; text-align: center;
+    }
+
+    /* Prominent Middle Meal Badge with Larger Text */
+    #meal-badge {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      background: #007bff; color: #fff; border-radius: 999px;
+      padding: 10px 32px; font-size: clamp(22px, 3.5vw, 36px); font-weight: 800;
+      margin-bottom: 12px; box-shadow: 0 4px 14px rgba(0,123,255,.25);
     }
     #screen-rating h1 {
-      font-size: clamp(22px, 3.8vw, 40px);
-      color: #123a5c; font-weight: 700; text-align: center; margin-bottom: 6px;
+      font-size: clamp(32px, 5vw, 56px);
+      color: #123a5c; font-weight: 800; text-align: center; margin-bottom: 4px;
     }
     #screen-rating .subtitle {
-      font-size: clamp(14px, 1.8vw, 19px);
-      color: #5a6b7c; text-align: center; margin-bottom: 3vh;
+      font-size: clamp(18px, 2.8vw, 30px);
+      color: #5a6b7c; text-align: center; margin-bottom: 1vh; font-weight: 600;
     }
+
     .rating-row {
       display: flex; flex-wrap: nowrap;
       justify-content: center; align-items: center;
-      gap: clamp(20px, 5vw, 64px); margin-bottom: 3vh;
+      gap: clamp(10px, 3vw, 30px);
+      width: 100%;
+      flex: 1;
     }
+    
+    /* ── LARGER SMILEY BUTTONS ── */
     .emoji-btn {
       border: none; background: transparent; cursor: pointer;
-      width: clamp(120px, 22vw, 240px);
-      height: clamp(120px, 22vw, 240px);
-      border-radius: 50%; padding: 10px;
+      width: clamp(220px, 52vh, 460px);
+      height: clamp(220px, 52vh, 460px);
+      border-radius: 50%; padding: 12px;
       transition: transform .15s ease, background-color .15s ease;
       touch-action: manipulation;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
     }
     .emoji-btn img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
-    .emoji-btn:active { transform: scale(1.1); background-color: #cfe6fb; }
-    .emoji-btn.picked { transform: scale(1.18); background-color: #007bff; }
+    .emoji-btn:active { transform: scale(1.06); background-color: #cfe6fb; }
+    .emoji-btn.picked { transform: scale(1.10); background-color: #007bff; }
+    
     #screen-rating .hint {
-      font-size: clamp(13px, 1.5vw, 17px); color: #7a8a99; text-align: center;
-    }
-    /* Meal badge shown on rating screen */
-    #meal-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: #eef4fa; border-radius: 999px; padding: 5px 16px;
-      font-size: 14px; font-weight: 700; color: #007bff;
-      margin-bottom: 10px;
+      font-size: clamp(16px, 2.2vw, 24px); color: #7a8a99; text-align: center; font-weight: 600;
     }
 
-    /* ── Selection screens (liked / reasons) ────────────────── */
+    /* ── Sub-screens (Liked & Horizontal Row Reason/Menu) ────── */
     .sel-screen {
       display: none; flex-direction: column;
       width: 100%; height: 100%;
-      padding: 62px 120px 16px;           /* side padding leaves room for fixed buttons */
+      padding: 68px 120px 16px;
       animation: fadeIn .22s ease;
+      position: relative; z-index: 11;
     }
     .sel-screen.active { display: flex; }
     .sel-screen h1 {
-      font-size: clamp(20px, 3.2vw, 32px);
+      font-size: clamp(22px, 3.5vw, 36px);
       color: #fff; font-weight: 700; text-align: center; margin-bottom: 4px;
     }
     .sel-screen .subtitle {
-      font-size: clamp(13px, 1.8vw, 18px);
+      font-size: clamp(14px, 2vw, 20px);
       color: rgba(255,255,255,.85); text-align: center; margin-bottom: 14px;
     }
 
-    /* White card containing the chips */
     .sel-card {
       background: #fff; border-radius: 18px;
       box-shadow: 0 6px 20px rgba(20,60,100,.14);
-      padding: 16px 20px;
+      padding: 20px;
       flex: 1; min-height: 0;
-      overflow: hidden;                   /* no scroll — everything must fit */
-      display: flex; flex-direction: column; gap: 10px;
+      overflow-y: auto;
+      display: flex; align-items: center; justify-content: center;
     }
 
-    /* ── "What did you love/like?" — food items as big chips ── */
+    /* ── WORD CLOUD LAYOUT ── */
     #liked-grid {
       display: flex; flex-wrap: wrap;
-      gap: 12px; align-content: center; justify-content: center;
-      height: 100%; padding: 8px 0;
+      gap: 16px 20px; align-items: center; justify-content: center;
+      width: 100%; height: 100%;
+      padding: 10px;
     }
     .food-chip {
-      display: inline-flex; align-items: center; gap: 10px;
-      border: 2.5px solid #c4d4e3; background: #f7fbff; color: #33475b;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: 2px solid #b3d4fc; background: #f0f7ff; color: #123a5c;
       border-radius: 999px; padding: 12px 24px;
-      font-size: clamp(16px, 2vw, 22px); font-weight: 600; cursor: pointer;
-      transition: background .12s, border-color .12s, color .12s, transform .1s;
-      touch-action: manipulation; white-space: nowrap;
-      box-shadow: 0 2px 6px rgba(0,0,0,.06);
+      font-weight: 700; cursor: pointer;
+      transition: transform .15s ease, background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+      touch-action: manipulation;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(0,60,130,.08);
+      flex: 0 0 auto;
     }
-    .food-chip:active { transform: scale(.96); }
+
+    .word-size-lg { font-size: clamp(18px, 2.2vw, 28px); padding: 16px 30px; }
+    .word-size-md { font-size: clamp(15px, 1.8vw, 22px); padding: 12px 24px; }
+    .word-size-sm { font-size: clamp(13px, 1.4vw, 18px); padding: 10px 18px; }
+
+    .tilt-left  { transform: rotate(-2deg); }
+    .tilt-right { transform: rotate(2deg); }
+    .tilt-none  { transform: rotate(0deg); }
+
+    .food-chip:active { transform: scale(.95) !important; }
     .food-chip .fc-check {
-      width: 24px; height: 24px; border-radius: 50%;
+      width: 22px; height: 22px; border-radius: 50%;
       border: 2px solid #b9cbdc; background: #fff;
       display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; font-size: 13px; color: transparent;
+      flex-shrink: 0; font-size: 11px; color: transparent;
       transition: background .12s, border-color .12s, color .12s;
     }
-    .food-chip.on { background: #007bff; border-color: #007bff; color: #fff; transform: scale(1.04); }
+    .food-chip.on {
+      background: #007bff; border-color: #0056b3; color: #fff;
+      transform: scale(1.08) rotate(0deg) !important;
+      box-shadow: 0 6px 18px rgba(0,123,255,.35);
+    }
     .food-chip.on .fc-check { background: rgba(255,255,255,.3); border-color: transparent; color: #fff; }
 
-    /* ── "Help us improve" — food columns, reason chips inside ─ */
+    /* ── HORIZONTAL ROW FORMAT FOR REASONS ── */
     #reason-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 10px; height: 100%; align-content: stretch;
+      display: flex; flex-direction: column;
+      gap: 12px; width: 100%; height: 100%;
+      overflow-y: auto; padding-right: 6px;
     }
-    .reason-col {
-      background: #f7fbff; border-radius: 12px;
-      border: 2px solid #eef3f8; padding: 10px 10px 12px;
-      display: flex; flex-direction: column; gap: 6px;
+    .reason-row {
+      display: flex; flex-direction: row; align-items: center;
+      justify-content: space-between;
+      background: #f7fbff; border-radius: 14px;
+      border: 2px solid #eef3f8; padding: 12px 18px;
+      gap: 16px; width: 100%; flex-shrink: 0;
+      transition: background .15s, border-color .15s;
     }
-    .reason-col.on { border-color: #007bff; background: #eaf5ff; }
-    .reason-col-name {
-      font-size: clamp(12px, 1.5vw, 15px); font-weight: 700;
-      color: #123a5c; text-align: center;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    .reason-row.on { border-color: #007bff; background: #eaf5ff; }
+    
+    .reason-row-name {
+      font-size: clamp(14px, 1.6vw, 18px); font-weight: 700;
+      color: #123a5c; white-space: nowrap; flex-shrink: 0;
     }
-    .reason-chips { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+
+    .reason-chips {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      justify-content: flex-end; align-items: center; flex: 1;
+    }
     .r-chip {
       border: 2px solid #c4d4e3; background: #fff; color: #33475b;
-      border-radius: 999px; padding: 5px 10px;
-      font-size: clamp(11px, 1.3vw, 13px); font-weight: 600; cursor: pointer;
+      border-radius: 999px; padding: 6px 14px;
+      font-size: clamp(12px, 1.3vw, 14px); font-weight: 600; cursor: pointer;
       transition: background .12s, color .12s, border-color .12s;
       touch-action: manipulation; white-space: nowrap;
     }
     .r-chip:active { background: #e3f0fd; }
     .r-chip.on { background: #007bff; border-color: #007bff; color: #fff; }
 
-    /* ── Fixed Skip (left) / Submit (right) buttons ─────────── */
+    /* ── Side Action Controls ──────────────────────────────── */
     #global-skip, #submit-wrap {
       position: fixed; top: 50%; transform: translateY(-50%);
       z-index: 50; display: none;
@@ -204,7 +256,6 @@
       box-shadow: 4px 0 12px rgba(0,0,0,.12);
       cursor: pointer; font-size: 18px; font-weight: 700; color: #6a7b8c;
       touch-action: manipulation; padding: 0 8px;
-      transition: background .15s, transform .1s;
     }
     #global-skip:active { background: #dde4ec; transform: translateY(-50%) scale(.96); }
     .skip-cd { font-size: 26px; font-weight: 900; color: #ff9800; line-height: 1; }
@@ -222,7 +273,6 @@
       display: flex; align-items: center; justify-content: center;
       flex-direction: column; gap: 2px;
       box-shadow: -4px 0 12px rgba(0,0,0,.15);
-      transition: background .15s, transform .1s;
     }
     #global-submit:active { background: #005bab; transform: scale(.96); }
     .submit-cd { font-size: 12px; font-weight: 600; opacity: .85; line-height: 1; }
@@ -237,10 +287,11 @@
       transition: stroke-dashoffset .95s linear;
     }
 
-    /* ── Thank you ───────────────────────────────────────────── */
+    /* ── Thank You Screen ───────────────────────────────────── */
     #screen-thanks {
       display: none; flex-direction: column;
       align-items: center; justify-content: center; text-align: center;
+      position: relative; z-index: 11;
     }
     #screen-thanks.active { display: flex; }
     #screen-thanks img { width: clamp(140px, 22vw, 220px); height: auto; margin-bottom: 20px; }
@@ -249,16 +300,25 @@
       color: #fff; max-width: 820px;
     }
 
+    /* ── ENLARGED APP FOOTER ───────────────────────────────── */
     .app-footer {
-      position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
-      font-size: 16px; font-weight: 600; color: #000;
+      position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%);
+      font-size: clamp(18px, 2.5vw, 26px); font-weight: 700; color: #000;
       z-index: 20; white-space: nowrap; pointer-events: none;
+      text-shadow: 0 1px 2px rgba(255,255,255,0.6);
+    }
+    .app-footer svg {
+      width: clamp(20px, 2.8vw, 28px);
+      height: clamp(20px, 2.8vw, 28px);
+      vertical-align: middle; display: inline-block; margin: 0 3px;
     }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-    @media (max-width: 640px) {
-      #screen-rating { padding: 28px 20px 24px; }
+    @media (max-width: 768px) {
+      .emoji-btn { width: clamp(130px, 30vh, 240px); height: clamp(130px, 30vh, 240px); }
+      .reason-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .reason-chips { justify-content: flex-start; width: 100%; }
       .sel-screen { padding: 58px 88px 12px; }
       #global-skip { width: 80px; min-height: 90px; font-size: 15px; }
       .skip-cd { font-size: 20px; }
@@ -272,6 +332,12 @@
   <button id="reload-btn" onclick="location.reload()" aria-label="Reload page">
     <i class="fas fa-rotate-right"></i>
   </button>
+  
+  <!-- Back Button on Feedback Screens -->
+  <button id="back-btn" class="hidden" onclick="resetToRating()" aria-label="Back to rating screen">
+    <i class="fas fa-arrow-left"></i> Back
+  </button>
+
   <img id="app-logo" src="images/logo.jpg" alt="Hirotec logo">
   <a id="admin-link" href="ratingLogin.html" aria-label="Admin login"><i class="fas fa-user-gear"></i></a>
   <div id="feedback-count-wrap">
@@ -279,16 +345,18 @@
     Today:&nbsp;<span id="feedback-count" style="font-size:18px;font-weight:800;color:#007bff;">0</span>
   </div>
 
-  <!-- 1. RATING -->
+  <!-- 1. MAIN RATING SCREEN -->
   <div id="screen-rating">
-    <div id="meal-badge">🍱 <span id="meal-badge-text">Lunch</span></div>
-    <h1>How was your meal today?</h1>
-    <p class="subtitle">Tap a smiley to rate</p>
+    <div class="rating-header">
+      <div id="meal-badge">🍱 <span id="meal-badge-text">Lunch</span></div>
+      <h1>How was your meal today?</h1>
+      <p class="subtitle">Tap a smiley to rate</p>
+    </div>
     <div class="rating-row" id="rating-row"></div>
     <p class="hint">Your feedback helps us serve you better</p>
   </div>
 
-  <!-- 2. LIKED (rating 5) -->
+  <!-- 2. LIKED MENU SCREEN (Word Cloud Layout) -->
   <div id="screen-liked" class="sel-screen">
     <h1 id="liked-title">What did you love?</h1>
     <p class="subtitle">Tap the items you enjoyed</p>
@@ -297,22 +365,22 @@
     </div>
   </div>
 
-  <!-- 3. REASONS (rating 1) -->
+  <!-- 3. HELP US IMPROVE SCREEN -->
   <div id="screen-reasons" class="sel-screen">
     <h1>Help us improve</h1>
-    <p class="subtitle">Tap the items that need attention</p>
+    <p class="subtitle">Select the menu item and feedback reason in each row</p>
     <div class="sel-card">
       <div id="reason-grid"></div>
     </div>
   </div>
 
-  <!-- 4. THANK YOU -->
+  <!-- 4. THANK YOU SCREEN -->
   <div id="screen-thanks">
     <img id="thanks-img" src="images/5.png" alt="">
     <p id="thanks-msg">Thank you for your feedback!</p>
   </div>
 
-  <!-- Fixed side buttons (shown on selection screens) -->
+  <!-- Side buttons for menu selection screens -->
   <button id="global-skip" aria-label="Skip">
     <span class="skip-cd" id="skip-cd">15</span>Skip
   </button>
@@ -320,24 +388,14 @@
     <button id="global-submit" aria-label="Submit">
       Submit<span class="submit-cd" id="submit-cd">15s</span>
     </button>
-    <!-- r=48 → circumference ≈ 301.6 -->
     <svg class="submit-ring" viewBox="0 0 108 108" aria-hidden="true">
       <circle class="submit-ring-track" cx="54" cy="54" r="48"/>
-      <circle class="submit-ring-fill"  cx="54" cy="54" r="48"
-              stroke-dasharray="301.6" stroke-dashoffset="301.6"
-              id="ring-fill"/>
+      <circle class="submit-ring-fill"  cx="54" cy="54" r="48" stroke-dasharray="301.6" stroke-dashoffset="301.6" id="ring-fill"/>
     </svg>
   </div>
 
   <script src="assets/js/supabase-sync.js"></script>
   <script>
-    /* =============================================================
-       Flow:
-         Rating 5  → liked screen (optional, 15s auto-submit)
-         Rating 3  → save rating-only → thank you directly
-         Rating 1  → reasons screen (optional, 15s auto-submit)
-       ============================================================= */
-
     const IDLE_SECS   = 15;
     const RING_CIRC   = 301.6;
     const REASONS_LIST = ['Salty', 'Too Spicy', 'Undercooked', 'Overcooked', 'Not Fresh', 'Too Oily'];
@@ -350,7 +408,6 @@
     let todayCount    = 0;
     let completionAudioContext = null;
 
-    // Elements
     const screenRating  = document.getElementById('screen-rating');
     const screenLiked   = document.getElementById('screen-liked');
     const screenReasons = document.getElementById('screen-reasons');
@@ -358,6 +415,8 @@
     const thanksImg     = document.getElementById('thanks-img');
     const thanksMsg     = document.getElementById('thanks-msg');
     const adminLink     = document.getElementById('admin-link');
+    const reloadBtn     = document.getElementById('reload-btn');
+    const backBtn       = document.getElementById('back-btn');
     const likedGrid     = document.getElementById('liked-grid');
     const reasonGrid    = document.getElementById('reason-grid');
     const globalSkip    = document.getElementById('global-skip');
@@ -370,52 +429,21 @@
 
     const TIMED = ['screen-liked', 'screen-reasons'];
 
-    /* ── IST date + meal type ────────────────────────────────── */
     function getISTDate() {
       return new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
       }).format(new Date());
     }
 
-    // Returns 'lunch' between 11:00 and 18:29 IST, 'dinner' from 18:30 onwards
-    // Before 11:00 also shows lunch (morning preview)
     function getCurrentMealType() {
       const parts = new Intl.DateTimeFormat('en-IN', {
         timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false
       }).formatToParts(new Date());
       const h = parseInt(parts.find(p => p.type === 'hour').value);
       const m = parseInt(parts.find(p => p.type === 'minute').value);
-      const totalMins = h * 60 + m;
-      // dinner: 18:30 (1110 mins) onwards; lunch: everything else
-      return totalMins >= 1110 ? 'dinner' : 'lunch';
+      return (h * 60 + m) >= 1110 ? 'dinner' : 'lunch';
     }
 
-    // Schedule an auto-reload at the next meal boundary (11:00 or 18:30 IST)
-    function scheduleNextReload() {
-      const now = new Date();
-      const parts = new Intl.DateTimeFormat('en-IN', {
-        timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-      }).formatToParts(now);
-      const h = parseInt(parts.find(p => p.type === 'hour').value);
-      const m = parseInt(parts.find(p => p.type === 'minute').value);
-      const s = parseInt(parts.find(p => p.type === 'second').value);
-      const todayMins = h * 60 + m;
-
-      // Boundaries in minutes-since-midnight IST
-      const boundaries = [11 * 60, 18 * 60 + 30];
-      const secsNow = todayMins * 60 + s;
-
-      let nextSecs = null;
-      for (const b of boundaries) {
-        if (b * 60 > secsNow) { nextSecs = b * 60 - secsNow; break; }
-      }
-      // If past all boundaries today, schedule for first boundary tomorrow
-      if (nextSecs === null) nextSecs = (24 * 3600 - secsNow) + boundaries[0] * 60;
-
-      setTimeout(() => location.reload(), nextSecs * 1000);
-    }
-
-    /* ── Screen management ───────────────────────────────────── */
     function showScreen(id) {
       [screenRating, screenLiked, screenReasons, screenThanks].forEach(el => {
         el.classList.remove('active');
@@ -427,22 +455,22 @@
       document.getElementById('app-logo').classList.toggle('hidden', id === 'screen-reasons');
 
       const timed = TIMED.includes(id);
+      reloadBtn.classList.toggle('hidden', timed);
+      backBtn.classList.toggle('hidden', !timed);
       globalSkip.classList.toggle('visible', timed);
       submitWrap.classList.toggle('visible', timed);
+      
       if (timed) { currentScreen = id; startIdle(id); }
       else        { stopIdle(); currentScreen = null; }
     }
 
-    /* ── Idle timer ──────────────────────────────────────────── */
     function updateTimerUI(secs) {
       skipCd.textContent   = secs;
       submitCd.textContent = secs + 's';
       ringFill.style.strokeDashoffset = RING_CIRC * (secs / IDLE_SECS);
     }
     function startIdle(screenId) {
-      stopIdle();
-      idleSecsLeft = IDLE_SECS;
-      updateTimerUI(idleSecsLeft);
+      stopIdle(); idleSecsLeft = IDLE_SECS; updateTimerUI(idleSecsLeft);
       idleInterval = setInterval(() => {
         idleSecsLeft = Math.max(0, idleSecsLeft - 1);
         updateTimerUI(idleSecsLeft);
@@ -452,17 +480,16 @@
         }
       }, 1000);
     }
-    function stopIdle() {
-      clearInterval(idleInterval); idleInterval = null;
-    }
-    // Any tap resets the countdown
-    document.addEventListener('pointerdown', () => {
-      if (currentScreen) startIdle(currentScreen);
-    }, true);
+    function stopIdle() { clearInterval(idleInterval); idleInterval = null; }
+    document.addEventListener('pointerdown', () => { if (currentScreen) startIdle(currentScreen); }, true);
 
-    /* ── Rating buttons ──────────────────────────────────────── */
+    /* ── Render Smileys on Main Screen (REORDERED: Loved it (5), Good (3), Bad (1)) ── */
     const ratingRow = document.getElementById('rating-row');
-    const SMILEYS = [{ v: 1, label: 'Bad' }, { v: 3, label: 'Neutral' }, { v: 5, label: 'Good' }];
+    const SMILEYS = [
+      { v: 5, label: 'Loved it' },
+      { v: 3, label: 'Good' },
+      { v: 1, label: 'Bad' }
+    ];
     SMILEYS.forEach(({ v, label }) => {
       const btn = document.createElement('button');
       btn.className = 'emoji-btn';
@@ -483,13 +510,11 @@
         } else if (v === 1) {
           showScreen('screen-reasons');
         } else {
-          // Neutral (3) — save and go straight to thanks
           saveRatingOnly(); showThanks();
         }
-      }, 500);
+      }, 400);
     }
 
-    /* ── Skip / Submit buttons ───────────────────────────────── */
     globalSkip.addEventListener('click', () => {
       stopIdle(); saveRatingOnly(); showThanks();
     });
@@ -498,7 +523,6 @@
       currentScreen === 'screen-liked' ? submitLiked() : submitReasons();
     });
 
-    /* ── Data saving ─────────────────────────────────────────── */
     function appendLocal(key, data) {
       const arr = JSON.parse(localStorage.getItem(key) || '[]');
       arr.push(data); localStorage.setItem(key, JSON.stringify(arr));
@@ -527,7 +551,6 @@
       })));
     }
 
-    /* ── Submit actions ──────────────────────────────────────── */
     function submitLiked() {
       const items = [...likedGrid.querySelectorAll('.food-chip.on')].map(c => c.dataset.item);
       items.length ? saveLiked(items) : saveRatingOnly();
@@ -535,21 +558,28 @@
     }
     function submitReasons() {
       const picked = [];
-      reasonGrid.querySelectorAll('.reason-col').forEach(col => {
-        col.querySelectorAll('.r-chip.on').forEach(chip =>
-          picked.push({ foodItem: col.dataset.food, reason: chip.dataset.reason }));
+      reasonGrid.querySelectorAll('.reason-row').forEach(row => {
+        row.querySelectorAll('.r-chip.on').forEach(chip =>
+          picked.push({ foodItem: row.dataset.food, reason: chip.dataset.reason }));
       });
       picked.length ? saveReasons(picked) : saveRatingOnly();
       showThanks();
     }
 
-    /* ── Build food selection screens ────────────────────────── */
+    /* ── Render Liked Items (Word Cloud Grid) ──────────────────── */
     function buildLikedGrid(items) {
       likedGrid.innerHTML = '';
-      items.forEach(item => {
+      const sizes = ['word-size-lg', 'word-size-md', 'word-size-sm'];
+      const tilts = ['tilt-left', 'tilt-right', 'tilt-none'];
+
+      items.forEach((item, idx) => {
         const chip = document.createElement('button');
         chip.type = 'button';
-        chip.className = 'food-chip';
+        
+        const sizeClass = sizes[idx % sizes.length];
+        const tiltClass = tilts[idx % tilts.length];
+        
+        chip.className = `food-chip ${sizeClass} ${tiltClass}`;
         chip.dataset.item = item;
         chip.innerHTML = `<span class="fc-check"><i class="fas fa-check"></i></span>${item}`;
         chip.addEventListener('click', () => chip.classList.toggle('on'));
@@ -557,36 +587,33 @@
       });
     }
 
+    /* ── Render Menu Items & Feedback Reasons in Horizontal Rows ─── */
     function buildReasonGrid(items) {
       reasonGrid.innerHTML = '';
       items.forEach(item => {
-        const col = document.createElement('div');
-        col.className = 'reason-col';
-        col.dataset.food = item;
+        const row = document.createElement('div');
+        row.className = 'reason-row'; row.dataset.food = item;
+        
         const name = document.createElement('div');
-        name.className = 'reason-col-name';
-        name.textContent = item;
+        name.className = 'reason-row-name'; name.textContent = item;
+        
         const chips = document.createElement('div');
         chips.className = 'reason-chips';
         REASONS_LIST.forEach(r => {
           const chip = document.createElement('button');
-          chip.type = 'button';
-          chip.className = 'r-chip';
-          chip.dataset.reason = r;
-          chip.textContent = r;
+          chip.type = 'button'; chip.className = 'r-chip';
+          chip.dataset.reason = r; chip.textContent = r;
           chip.addEventListener('click', () => {
             chip.classList.toggle('on');
-            col.classList.toggle('on', !!col.querySelector('.r-chip.on'));
+            row.classList.toggle('on', !!row.querySelector('.r-chip.on'));
           });
           chips.appendChild(chip);
         });
-        col.appendChild(name);
-        col.appendChild(chips);
-        reasonGrid.appendChild(col);
+        row.appendChild(name); row.appendChild(chips);
+        reasonGrid.appendChild(row);
       });
     }
 
-    /* ── Thank you + reset ───────────────────────────────────── */
     function primeAudio() {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) return;
@@ -625,23 +652,20 @@
     }
 
     function resetToRating() {
-      stopIdle();
-      ratingValue = null; advancing = false; currentScreen = null;
+      stopIdle(); ratingValue = null; advancing = false; currentScreen = null;
       document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('picked'));
       likedGrid.querySelectorAll('.food-chip.on').forEach(c => c.classList.remove('on'));
       reasonGrid.querySelectorAll('.r-chip.on').forEach(c => c.classList.remove('on'));
-      reasonGrid.querySelectorAll('.reason-col.on').forEach(c => c.classList.remove('on'));
+      reasonGrid.querySelectorAll('.reason-row.on').forEach(r => r.classList.remove('on'));
       showScreen('screen-rating');
     }
 
-    /* ── Menu loading ────────────────────────────────────────── */
     async function getTodayMenuItems() {
-      const today   = getISTDate();
-      const meal    = getCurrentMealType();
+      const today = getISTDate();
+      const meal = getCurrentMealType();
       const cacheKey = `${today}_${meal}`;
-      const cache   = JSON.parse(localStorage.getItem('dailyMenus') || '{}');
+      const cache = JSON.parse(localStorage.getItem('dailyMenus') || '{}');
 
-      // Update meal badge
       const badge = document.getElementById('meal-badge-text');
       if (badge) badge.textContent = meal.charAt(0).toUpperCase() + meal.slice(1);
 
@@ -658,11 +682,7 @@
       return cache[cacheKey] || [];
     }
 
-    /* ── Feedback count ──────────────────────────────────────── */
-    function incrementFeedbackCount() {
-      todayCount++;
-      feedbackCountEl.textContent = todayCount;
-    }
+    function incrementFeedbackCount() { todayCount++; feedbackCountEl.textContent = todayCount; }
     function initFeedbackCount() {
       const today = getISTDate();
       const local = JSON.parse(localStorage.getItem('canteenFeedback') || '[]');
@@ -677,7 +697,6 @@
       }
     }
 
-    /* ── IST clock ───────────────────────────────────────────── */
     const istClock = document.getElementById('ist-clock');
     const istFmt = new Intl.DateTimeFormat('en-IN', {
       timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric',
@@ -690,7 +709,6 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
       initFeedbackCount();
-      scheduleNextReload();
       const items = await getTodayMenuItems();
       if (items.length) {
         buildLikedGrid(items);
@@ -699,6 +717,6 @@
     });
   </script>
 
-  <div class="app-footer">Built with <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle;display:inline-block;margin:0 2px"><path fill="#e03535" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> by <strong>Hirotec Team India</strong></div>
+  <div class="app-footer">Built with <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#e03535" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> by <strong>Hirotec Team India</strong></div>
 </body>
 </html>
