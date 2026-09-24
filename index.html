@@ -57,7 +57,7 @@
     }
     #reload-btn:active { background: #dbe9f5; }
 
-    /* Back Button on Feedback Screens - Moved lower so it doesn't overlap header text */
+    /* Back Button on Feedback Screens */
     #back-btn {
       position: fixed; top: 60px; left: 14px; z-index: 60;
       background: #ffffff; border: none; cursor: pointer;
@@ -143,13 +143,11 @@
     }
     .sel-screen.active { display: flex; }
 
-    /* Layout Header Bar with Inline Titles */
     .screen-header-bar {
       display: flex; align-items: center; justify-content: space-between;
       width: 100%; margin-bottom: 12px; padding-left: 10px; gap: 16px;
     }
     
-    /* Inline Header Title + Subtitle */
     .screen-header-title-inline {
       display: flex; align-items: baseline; gap: 12px; flex-wrap: nowrap; overflow: hidden;
     }
@@ -164,12 +162,11 @@
       text-shadow: 0 1px 4px rgba(0,20,50,0.3); margin: 0;
     }
 
-    /* Top Right Action Control Group */
     .screen-actions {
       display: flex; align-items: center; gap: 12px; z-index: 50; flex-shrink: 0;
     }
 
-    /* Timer Badge Standalone Outside Buttons */
+    /* Standalone Timer Badge Outside Buttons */
     .timer-badge-outside {
       background: rgba(255, 255, 255, 0.95);
       color: #0a2540;
@@ -183,7 +180,6 @@
     }
     .timer-badge-outside i { color: #d97706; }
 
-    /* Larger Skip & Submit Buttons */
     .top-skip-btn {
       display: flex; align-items: center; justify-content: center;
       background: rgba(255,255,255,0.95); border: none; border-radius: 999px;
@@ -202,7 +198,6 @@
     }
     .top-submit-btn:active { background: #004080; transform: scale(.96); }
 
-    /* Expanded Card Container */
     .sel-card {
       background: #ffffff; border-radius: 20px;
       box-shadow: 0 8px 24px rgba(0,40,90,.2);
@@ -327,8 +322,7 @@
   <button id="reload-btn" onclick="location.reload()" aria-label="Reload page">
     <i class="fas fa-rotate-right"></i>
   </button>
-  
-  <!-- Back Button (Positioned Lower to Prevent Title Overlap) -->
+
   <button id="back-btn" class="hidden" onclick="resetToRating()" aria-label="Back to rating screen">
     <i class="fas fa-arrow-left"></i> Back
   </button>
@@ -359,7 +353,6 @@
         <p class="subtitle">— Tap the items you enjoyed</p>
       </div>
       <div class="screen-actions">
-        <!-- Standalone Timer Badge Outside Buttons -->
         <div class="timer-badge-outside">
           <i class="fas fa-clock"></i> <span id="liked-timer-val">15</span>s
         </div>
@@ -380,7 +373,6 @@
         <p class="subtitle">— Select food items and reasons for feedback</p>
       </div>
       <div class="screen-actions">
-        <!-- Standalone Timer Badge Outside Buttons -->
         <div class="timer-badge-outside">
           <i class="fas fa-clock"></i> <span id="reasons-timer-val">15</span>s
         </div>
@@ -523,18 +515,74 @@
       stopIdle(); saveRatingOnly(); showThanks();
     }
 
+    /* ── LOCAL STORAGE & BACKGROUND AUTO-SYNC ── */
     function appendLocal(key, data) {
       const arr = JSON.parse(localStorage.getItem(key) || '[]');
-      arr.push(data); localStorage.setItem(key, JSON.stringify(arr));
+      // Mark record with sync status flag
+      data._synced = false;
+      data._timestamp = Date.now();
+      arr.push(data); 
+      localStorage.setItem(key, JSON.stringify(arr));
     }
+
     function cloudSafe(rows) {
-      if (typeof cloudSaveFeedback === 'function') cloudSaveFeedback(rows);
+      if (typeof cloudSaveFeedback === 'function') {
+        cloudSaveFeedback(rows)
+          .then(() => markLocalAsSynced(rows))
+          .catch(err => console.warn('Sync pending: will retry in background', err));
+      }
     }
+
+    function markLocalAsSynced(rows) {
+      const local = JSON.parse(localStorage.getItem('canteenFeedback') || '[]');
+      let updated = false;
+      local.forEach(entry => {
+        if (!entry._synced) {
+          entry._synced = true;
+          updated = true;
+        }
+      });
+      if (updated) localStorage.setItem('canteenFeedback', JSON.stringify(local));
+    }
+
+    /* Periodic Background Auto-Sync Timer (Runs every 30 seconds) */
+    async function syncUnsentLocalFeedback() {
+      if (typeof cloudSaveFeedback !== 'function') return;
+      
+      const local = JSON.parse(localStorage.getItem('canteenFeedback') || '[]');
+      const unsent = local.filter(e => !e._synced);
+      if (!unsent.length) return;
+
+      const payload = [];
+      unsent.forEach(entry => {
+        if (entry.goodFood && entry.goodFood.length) {
+          entry.goodFood.forEach(food_item => {
+            payload.push({ feedback_date: entry.date, rating: entry.rating, feedback_type: 'good_food', food_item });
+          });
+        } else if (entry.reasons && entry.reasons.length) {
+          entry.reasons.forEach(r => {
+            payload.push({ feedback_date: entry.date, rating: entry.rating, feedback_type: 'reason', food_item: r.foodItem, reason: r.reason });
+          });
+        } else {
+          payload.push({ feedback_date: entry.date, rating: entry.rating, feedback_type: 'rating_only' });
+        }
+      });
+
+      try {
+        await cloudSaveFeedback(payload);
+        markLocalAsSynced();
+        initFeedbackCount(); // Refresh live count after background sync
+      } catch (err) {
+        console.warn('Background auto-sync failed, retrying on next interval...', err);
+      }
+    }
+
     function saveRatingOnly() {
       const date = getISTDate();
       appendLocal('canteenFeedback', { date, rating: ratingValue });
       cloudSafe([{ feedback_date: date, rating: ratingValue, feedback_type: 'rating_only' }]);
     }
+
     function saveLiked(items) {
       const date = getISTDate();
       appendLocal('canteenFeedback', { date, rating: ratingValue, goodFood: items });
@@ -542,6 +590,7 @@
         feedback_date: date, rating: ratingValue, feedback_type: 'good_food', food_item
       })));
     }
+
     function saveReasons(reasons) {
       const date = getISTDate();
       appendLocal('canteenFeedback', { date, rating: ratingValue, reasons });
@@ -556,6 +605,7 @@
       items.length ? saveLiked(items) : saveRatingOnly();
       showThanks();
     }
+
     function submitReasons() {
       const picked = [];
       reasonGrid.querySelectorAll('.reason-row').forEach(row => {
@@ -618,6 +668,7 @@
       if (!completionAudioContext) completionAudioContext = new Ctx();
       if (completionAudioContext.state === 'suspended') completionAudioContext.resume();
     }
+
     function playSound() {
       primeAudio();
       const ctx = completionAudioContext; if (!ctx) return;
@@ -637,7 +688,7 @@
 
     function showThanks() {
       const msgs = {
-        5: "Amazing! We'rd glad you enjoyed it. Thank you!",
+        5: "Amazing! We're glad you enjoyed it. Thank you!",
         3: "Thanks! We'll keep improving.",
         1: "We apologize for the experience. We'll work on it. Thank you!"
       };
@@ -681,18 +732,34 @@
     }
 
     function incrementFeedbackCount() { todayCount++; feedbackCountEl.textContent = todayCount; }
-    function initFeedbackCount() {
+    
+    async function initFeedbackCount() {
       const today = getISTDate();
-      const local = JSON.parse(localStorage.getItem('canteenFeedback') || '[]');
-      todayCount = local.filter(e => e.date === today).length;
-      feedbackCountEl.textContent = todayCount;
+      let local = JSON.parse(localStorage.getItem('canteenFeedback') || '[]').filter(e => e.date === today);
+
       if (typeof cloudFetchFeedback === 'function') {
-        cloudFetchFeedback().then(rows => {
-          if (!rows) return;
-          const cloud = rows.filter(r => r.feedback_date === today).length;
-          if (cloud > todayCount) { todayCount = cloud; feedbackCountEl.textContent = todayCount; }
-        }).catch(() => {});
+        try {
+          const rows = await cloudFetchFeedback();
+          if (Array.isArray(rows)) {
+            const cloudTodayCount = rows.filter(r => r.feedback_date === today).length;
+            todayCount = cloudTodayCount;
+            feedbackCountEl.textContent = todayCount;
+
+            // If database is cleared/empty, clear local cache to match live DB
+            if (cloudTodayCount === 0) {
+              const cleanedLocal = JSON.parse(localStorage.getItem('canteenFeedback') || '[]')
+                                      .filter(e => e.date !== today);
+              localStorage.setItem('canteenFeedback', JSON.stringify(cleanedLocal));
+            }
+            return;
+          }
+        } catch (err) {
+          console.warn('Cloud fetch failed, using local count:', err);
+        }
       }
+
+      todayCount = local.length;
+      feedbackCountEl.textContent = todayCount;
     }
 
     const istFmt = new Intl.DateTimeFormat('en-IN', {
@@ -706,11 +773,18 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
       initFeedbackCount();
+      
       const items = await getTodayMenuItems();
       if (items.length) {
         buildLikedGrid(items);
         buildReasonGrid(items);
       }
+
+      // Initialize background periodic auto-sync every 30 seconds
+      setInterval(syncUnsentLocalFeedback, 30000);
+      
+      // Auto-sync whenever online connectivity is restored
+      window.addEventListener('online', syncUnsentLocalFeedback);
     });
   </script>
 
