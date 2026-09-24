@@ -187,22 +187,23 @@ async function cloudFetchFeedback() {
 }
 
 // ---------- Daily menu ----------
-async function cloudUpsertDailyMenu(date, items) {
+async function cloudUpsertDailyMenu(date, items, mealType = 'lunch') {
   return saveOrQueue({
     table: "daily_menu",
     type: "upsert",
-    conflictKey: "menu_date",
-    payload: { menu_date: date, items, updated_at: new Date().toISOString() }
+    conflictKey: "menu_date,meal_type",
+    payload: { menu_date: date, meal_type: mealType, items, updated_at: new Date().toISOString() }
   });
 }
 
-async function cloudFetchDailyMenu(date) {
+async function cloudFetchDailyMenu(date, mealType = 'lunch') {
   try {
     if (!navigator.onLine) throw new Error("offline");
     const { data, error } = await sbClient
       .from("daily_menu")
       .select("items")
       .eq("menu_date", date)
+      .eq("meal_type", mealType)
       .maybeSingle();
     if (error) throw error;
     return data ? data.items : null;

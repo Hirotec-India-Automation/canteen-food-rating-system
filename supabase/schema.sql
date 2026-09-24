@@ -10,12 +10,14 @@ create table if not exists food_items (
   created_at timestamptz not null default now()
 );
 
--- One row per calendar day holding the list of items on that day's menu
+-- One row per calendar day + meal type holding the list of items
 create table if not exists daily_menu (
   id uuid primary key default gen_random_uuid(),
-  menu_date date unique not null,
+  menu_date date not null,
+  meal_type text not null default 'lunch' check (meal_type in ('lunch','dinner')),
   items text[] not null default '{}',
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  unique (menu_date, meal_type)
 );
 
 -- One row per feedback event submitted by an employee
@@ -40,6 +42,20 @@ alter table feedback alter column feedback_type set not null;
 
 create index if not exists feedback_date_idx on feedback (feedback_date);
 create index if not exists daily_menu_date_idx on daily_menu (menu_date);
+
+-- Migration: add meal_type to existing daily_menu tables
+alter table daily_menu add column if not exists meal_type text not null default 'lunch'
+  check (meal_type in ('lunch','dinner'));
+-- Replace the old unique-on-date constraint with unique-on-(date,meal_type)
+alter table daily_menu drop constraint if exists daily_menu_menu_date_key;
+do $$ begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'daily_menu_menu_date_meal_type_key'
+  ) then
+    alter table daily_menu add constraint daily_menu_menu_date_meal_type_key
+      unique (menu_date, meal_type);
+  end if;
+end $$;
 
 -- Row Level Security: this is a public/internal tool with no server-side auth,
 -- so the anon key is allowed to read/write directly. Do not reuse this schema

@@ -393,6 +393,17 @@
 		</div>
 
 		<div class="form-row">
+			<label>Meal Type:</label>
+			<div style="flex-grow:1; display:flex; gap:10px; align-items:center;">
+				<button id="meal-lunch-btn" onclick="setMealType('lunch')"
+					style="background:#007bff;color:#fff;min-width:100px;">🍱 Lunch</button>
+				<button id="meal-dinner-btn" onclick="setMealType('dinner')"
+					style="background:#eef4fa;color:#4facfe;min-width:100px;">🍛 Dinner</button>
+				<span id="meal-label" style="font-weight:bold;color:#007bff;font-size:15px;">Showing: Lunch</span>
+			</div>
+		</div>
+
+		<div class="form-row">
 			<label for="search-box">Search Food Items:</label>
 			<input type="text" id="search-box" placeholder="Search food items..." oninput="filterMenuItems()" />
 		</div>
@@ -477,6 +488,20 @@
 		const searchBox = document.getElementById('search-box');
 		let dailyMenus = JSON.parse(localStorage.getItem('dailyMenus')) || {}; 
 		let allFoodItems = JSON.parse(localStorage.getItem('allFoodItems')) || [];
+		let currentMealType = 'lunch'; // 'lunch' or 'dinner'
+
+		// Meal type key: "YYYY-MM-DD_lunch" or "YYYY-MM-DD_dinner"
+		function mealKey(date, meal) { return `${date}_${meal}`; }
+
+		function setMealType(meal) {
+			currentMealType = meal;
+			document.getElementById('meal-lunch-btn').style.background  = meal === 'lunch'  ? '#007bff' : '#eef4fa';
+			document.getElementById('meal-lunch-btn').style.color       = meal === 'lunch'  ? '#fff'    : '#4facfe';
+			document.getElementById('meal-dinner-btn').style.background = meal === 'dinner' ? '#007bff' : '#eef4fa';
+			document.getElementById('meal-dinner-btn').style.color      = meal === 'dinner' ? '#fff'    : '#4facfe';
+			document.getElementById('meal-label').textContent = `Showing: ${meal.charAt(0).toUpperCase()+meal.slice(1)}`;
+			loadMenu();
+		}
 
 		// Sync status badge
 		const syncBadge = document.getElementById("sync-badge");
@@ -570,22 +595,17 @@
 		async function loadMenu() {
 			const selectedDate = selectedDateElement.value;
 			menuTableBody.innerHTML = '';
-
-			// Save the selected date to localStorage
 			localStorage.setItem('selectedMenuDate', selectedDate);
 
-			// Try Supabase first for this date's menu, falling back to the local cache offline
 			if (selectedDate) {
-				const cloudItems = await cloudFetchDailyMenu(selectedDate);
-				if (cloudItems) dailyMenus[selectedDate] = cloudItems;
+				const cloudItems = await cloudFetchDailyMenu(selectedDate, currentMealType);
+				if (cloudItems) dailyMenus[mealKey(selectedDate, currentMealType)] = cloudItems;
 			}
 			localStorage.setItem('dailyMenus', JSON.stringify(dailyMenus));
 
-			// Get the selected items for the day
-			const selectedItemsForDate = dailyMenus[selectedDate] || [];
-
+			const selectedItemsForDate = dailyMenus[mealKey(selectedDate, currentMealType)] || [];
 			allFoodItems.forEach((item, index) => {
-				createMenuRow(item, index, selectedItemsForDate); // Pass selected items to createMenuRow
+				createMenuRow(item, index, selectedItemsForDate);
 			});
 		}
 
@@ -639,23 +659,16 @@
 
 		function updateSelectedItems(item, isChecked) {
 			const selectedDate = selectedDateElement.value;
-			const selectedItemsForDate = dailyMenus[selectedDate] || [];
+			const key = mealKey(selectedDate, currentMealType);
+			const selectedItemsForDate = dailyMenus[key] || [];
 
 			if (isChecked) {
-				// Add item if checked and not already in selected items
-				if (!selectedItemsForDate.includes(item)) {
-				selectedItemsForDate.push(item);
-				}
+				if (!selectedItemsForDate.includes(item)) selectedItemsForDate.push(item);
 			} else {
-				// Remove item if unchecked
 				const index = selectedItemsForDate.indexOf(item);
-				if (index > -1) {
-				selectedItemsForDate.splice(index, 1);
-				}
+				if (index > -1) selectedItemsForDate.splice(index, 1);
 			}
-
-			// Update dailyMenus and save to localStorage
-			dailyMenus[selectedDate] = selectedItemsForDate;
+			dailyMenus[key] = selectedItemsForDate;
 			localStorage.setItem('dailyMenus', JSON.stringify(dailyMenus));
 		}
 
@@ -682,9 +695,8 @@
 		function deleteMenuItem(item) {
 			allFoodItems = allFoodItems.filter(existingItem => existingItem !== item);
 
-			// Remove the item from each date's menu if it was selected previously
-			for (const date in dailyMenus) {
-				dailyMenus[date] = dailyMenus[date].filter(existingItem => existingItem !== item);
+			for (const key in dailyMenus) {
+				dailyMenus[key] = dailyMenus[key].filter(existingItem => existingItem !== item);
 			}
 
 			localStorage.setItem('allFoodItems', JSON.stringify(allFoodItems));
@@ -704,25 +716,15 @@
 			const selectedDate = selectedDateElement.value;
 			const selectedItems = Array.from(document.querySelectorAll('.food-checkbox:checked')).map(checkbox => checkbox.value);
 
-			if (!selectedDate) {
-				alert("Please select a date.");
-				return;
-			}
+			if (!selectedDate) { alert("Please select a date."); return; }
+			if (selectedItems.length === 0) { alert("Please select the food items."); return; }
+			if (selectedItems.length < 4) { alert("Please select at least 4 food items."); return; }
 
-			if (selectedItems.length === 0) {
-				alert("Please select the food items.");
-				return;
-			}
-
-			if (selectedItems.length < 4) {
-				alert("Please select at least 4 food items.");
-				return;
-			}
-
-			dailyMenus[selectedDate] = selectedItems;
+			const key = mealKey(selectedDate, currentMealType);
+			dailyMenus[key] = selectedItems;
 			localStorage.setItem('dailyMenus', JSON.stringify(dailyMenus));
-			cloudUpsertDailyMenu(selectedDate, selectedItems);
-			alert("Menu for " + selectedDate + " has been updated!");
+			cloudUpsertDailyMenu(selectedDate, selectedItems, currentMealType);
+			alert(`${currentMealType.charAt(0).toUpperCase()+currentMealType.slice(1)} menu for ${selectedDate} has been updated!`);
 		}
 
 		function selectAll(checkbox) {
@@ -737,13 +739,15 @@
 			window.location.href = 'index.html';
 		});
 
-		// Builds a fillable Date / Food Item template covering a sample week for bulk menu upload
+		// Builds a fillable Date / Meal Type / Food Item template for bulk menu upload
 		function downloadMenuTemplate() {
 			const sampleRows = [
-				{ Date: '2026-09-22', 'Food Item': 'Idli' },
-				{ Date: '2026-09-22', 'Food Item': 'Sambar' },
-				{ Date: '2026-09-23', 'Food Item': 'Dosa' },
-				{ Date: '2026-09-23', 'Food Item': 'Chutney' }
+				{ Date: '2026-09-22', 'Meal Type': 'lunch',  'Food Item': 'Idli' },
+				{ Date: '2026-09-22', 'Meal Type': 'lunch',  'Food Item': 'Sambar' },
+				{ Date: '2026-09-22', 'Meal Type': 'dinner', 'Food Item': 'Rice' },
+				{ Date: '2026-09-22', 'Meal Type': 'dinner', 'Food Item': 'Dal' },
+				{ Date: '2026-09-23', 'Meal Type': 'lunch',  'Food Item': 'Dosa' },
+				{ Date: '2026-09-23', 'Meal Type': 'lunch',  'Food Item': 'Chutney' }
 			];
 			const worksheet = XLSX.utils.json_to_sheet(sampleRows);
 			const workbook = XLSX.utils.book_new();
@@ -759,44 +763,44 @@
 			return String(value).trim();
 		}
 
-		// Reads an uploaded Excel/CSV file with Date + Food Item columns and applies it across all the dates found
+		// Reads an uploaded Excel/CSV file with Date + Food Item + optional Meal Type columns
 		async function uploadMenuFile() {
 			const fileInput = document.getElementById('menu-upload');
 			const file = fileInput.files[0];
-			if (!file) {
-				alert('Please choose an Excel or CSV file first.');
-				return;
-			}
+			if (!file) { alert('Please choose an Excel or CSV file first.'); return; }
 
 			const data = await file.arrayBuffer();
 			const workbook = XLSX.read(data, { type: 'array', cellDates: true });
 			const sheet = workbook.Sheets[workbook.SheetNames[0]];
 			const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
 
-			const menusByDate = {};
+			const menusByKey = {};
 			rows.forEach(row => {
-				const dateKey = Object.keys(row).find(k => k.toLowerCase().trim() === 'date');
-				const itemKey = Object.keys(row).find(k => k.toLowerCase().trim() === 'food item');
+				const dateKey  = Object.keys(row).find(k => k.toLowerCase().trim() === 'date');
+				const itemKey  = Object.keys(row).find(k => k.toLowerCase().trim() === 'food item');
+				const mealKey2 = Object.keys(row).find(k => k.toLowerCase().trim() === 'meal type');
 				if (!dateKey || !itemKey) return;
 
 				const date = normalizeTemplateDate(row[dateKey]);
 				const item = String(row[itemKey]).trim();
+				const meal = mealKey2 ? String(row[mealKey2]).trim().toLowerCase() : 'lunch';
+				const validMeal = meal === 'dinner' ? 'dinner' : 'lunch';
 				if (!date || !item) return;
 
-				if (!menusByDate[date]) menusByDate[date] = [];
-				if (!menusByDate[date].includes(item)) menusByDate[date].push(item);
+				const k = mealKey(date, validMeal);
+				if (!menusByKey[k]) menusByKey[k] = { date, meal: validMeal, items: [] };
+				if (!menusByKey[k].items.includes(item)) menusByKey[k].items.push(item);
 			});
 
-			const dateCount = Object.keys(menusByDate).length;
-			if (dateCount === 0) {
+			const entryCount = Object.keys(menusByKey).length;
+			if (entryCount === 0) {
 				alert('No valid rows found. The sheet needs "Date" and "Food Item" columns.');
 				return;
 			}
 
-			for (const [date, items] of Object.entries(menusByDate)) {
-				dailyMenus[date] = items;
-				cloudUpsertDailyMenu(date, items);
-
+			for (const [k, { date, meal, items }] of Object.entries(menusByKey)) {
+				dailyMenus[k] = items;
+				cloudUpsertDailyMenu(date, items, meal);
 				items.forEach(item => {
 					if (!allFoodItems.includes(item)) {
 						allFoodItems.push(item);
@@ -807,10 +811,9 @@
 
 			localStorage.setItem('dailyMenus', JSON.stringify(dailyMenus));
 			localStorage.setItem('allFoodItems', JSON.stringify(allFoodItems));
-
 			fileInput.value = '';
 			loadMenu();
-			alert(`Menu uploaded for ${dateCount} date(s).`);
+			alert(`Menu uploaded for ${entryCount} date/meal combination(s).`);
 		}
 
 		function downloadJSON() {

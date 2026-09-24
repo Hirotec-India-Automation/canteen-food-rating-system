@@ -67,28 +67,28 @@
     #screen-rating {
       background: #fff; border-radius: 28px;
       box-shadow: 0 12px 32px rgba(20,60,100,.22);
-      padding: 40px 48px 32px;
+      padding: 4vh 4vw 3vh;
       display: flex; flex-direction: column; align-items: center;
-      max-width: 95vw;
+      width: min(95vw, 900px);
     }
     #screen-rating h1 {
-      font-size: clamp(24px, 4vw, 42px);
+      font-size: clamp(22px, 3.8vw, 40px);
       color: #123a5c; font-weight: 700; text-align: center; margin-bottom: 6px;
     }
     #screen-rating .subtitle {
-      font-size: clamp(15px, 2vw, 20px);
-      color: #5a6b7c; text-align: center; margin-bottom: 32px;
+      font-size: clamp(14px, 1.8vw, 19px);
+      color: #5a6b7c; text-align: center; margin-bottom: 3vh;
     }
     .rating-row {
       display: flex; flex-wrap: nowrap;
       justify-content: center; align-items: center;
-      gap: clamp(16px, 4vw, 56px); margin-bottom: 28px;
+      gap: clamp(20px, 5vw, 64px); margin-bottom: 3vh;
     }
     .emoji-btn {
       border: none; background: transparent; cursor: pointer;
-      width: clamp(110px, 26vw, 230px);
-      height: clamp(110px, 26vw, 230px);
-      border-radius: 50%; padding: 12px;
+      width: clamp(120px, 22vw, 240px);
+      height: clamp(120px, 22vw, 240px);
+      border-radius: 50%; padding: 10px;
       transition: transform .15s ease, background-color .15s ease;
       touch-action: manipulation;
     }
@@ -96,7 +96,14 @@
     .emoji-btn:active { transform: scale(1.1); background-color: #cfe6fb; }
     .emoji-btn.picked { transform: scale(1.18); background-color: #007bff; }
     #screen-rating .hint {
-      font-size: clamp(14px, 1.6vw, 18px); color: #7a8a99; text-align: center;
+      font-size: clamp(13px, 1.5vw, 17px); color: #7a8a99; text-align: center;
+    }
+    /* Meal badge shown on rating screen */
+    #meal-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #eef4fa; border-radius: 999px; padding: 5px 16px;
+      font-size: 14px; font-weight: 700; color: #007bff;
+      margin-bottom: 10px;
     }
 
     /* ── Selection screens (liked / reasons) ────────────────── */
@@ -129,24 +136,27 @@
     /* ── "What did you love/like?" — food items as big chips ── */
     #liked-grid {
       display: flex; flex-wrap: wrap;
-      gap: 10px; align-content: center; justify-content: center;
-      height: 100%;
+      gap: 12px; align-content: center; justify-content: center;
+      height: 100%; padding: 8px 0;
     }
     .food-chip {
       display: inline-flex; align-items: center; gap: 10px;
-      border: 2px solid #c4d4e3; background: #f7fbff; color: #33475b;
-      border-radius: 999px; padding: 10px 22px;
-      font-size: clamp(15px, 1.8vw, 20px); font-weight: 600; cursor: pointer;
-      transition: background .12s, border-color .12s, color .12s;
+      border: 2.5px solid #c4d4e3; background: #f7fbff; color: #33475b;
+      border-radius: 999px; padding: 12px 24px;
+      font-size: clamp(16px, 2vw, 22px); font-weight: 600; cursor: pointer;
+      transition: background .12s, border-color .12s, color .12s, transform .1s;
       touch-action: manipulation; white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,.06);
     }
+    .food-chip:active { transform: scale(.96); }
     .food-chip .fc-check {
-      width: 22px; height: 22px; border-radius: 50%;
+      width: 24px; height: 24px; border-radius: 50%;
       border: 2px solid #b9cbdc; background: #fff;
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0; font-size: 13px; color: transparent;
+      transition: background .12s, border-color .12s, color .12s;
     }
-    .food-chip.on { background: #007bff; border-color: #007bff; color: #fff; }
+    .food-chip.on { background: #007bff; border-color: #007bff; color: #fff; transform: scale(1.04); }
     .food-chip.on .fc-check { background: rgba(255,255,255,.3); border-color: transparent; color: #fff; }
 
     /* ── "Help us improve" — food columns, reason chips inside ─ */
@@ -271,6 +281,7 @@
 
   <!-- 1. RATING -->
   <div id="screen-rating">
+    <div id="meal-badge">🍱 <span id="meal-badge-text">Lunch</span></div>
     <h1>How was your meal today?</h1>
     <p class="subtitle">Tap a smiley to rate</p>
     <div class="rating-row" id="rating-row"></div>
@@ -359,11 +370,49 @@
 
     const TIMED = ['screen-liked', 'screen-reasons'];
 
-    /* ── IST date ────────────────────────────────────────────── */
+    /* ── IST date + meal type ────────────────────────────────── */
     function getISTDate() {
       return new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
       }).format(new Date());
+    }
+
+    // Returns 'lunch' between 11:00 and 18:29 IST, 'dinner' from 18:30 onwards
+    // Before 11:00 also shows lunch (morning preview)
+    function getCurrentMealType() {
+      const parts = new Intl.DateTimeFormat('en-IN', {
+        timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false
+      }).formatToParts(new Date());
+      const h = parseInt(parts.find(p => p.type === 'hour').value);
+      const m = parseInt(parts.find(p => p.type === 'minute').value);
+      const totalMins = h * 60 + m;
+      // dinner: 18:30 (1110 mins) onwards; lunch: everything else
+      return totalMins >= 1110 ? 'dinner' : 'lunch';
+    }
+
+    // Schedule an auto-reload at the next meal boundary (11:00 or 18:30 IST)
+    function scheduleNextReload() {
+      const now = new Date();
+      const parts = new Intl.DateTimeFormat('en-IN', {
+        timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+      }).formatToParts(now);
+      const h = parseInt(parts.find(p => p.type === 'hour').value);
+      const m = parseInt(parts.find(p => p.type === 'minute').value);
+      const s = parseInt(parts.find(p => p.type === 'second').value);
+      const todayMins = h * 60 + m;
+
+      // Boundaries in minutes-since-midnight IST
+      const boundaries = [11 * 60, 18 * 60 + 30];
+      const secsNow = todayMins * 60 + s;
+
+      let nextSecs = null;
+      for (const b of boundaries) {
+        if (b * 60 > secsNow) { nextSecs = b * 60 - secsNow; break; }
+      }
+      // If past all boundaries today, schedule for first boundary tomorrow
+      if (nextSecs === null) nextSecs = (24 * 3600 - secsNow) + boundaries[0] * 60;
+
+      setTimeout(() => location.reload(), nextSecs * 1000);
     }
 
     /* ── Screen management ───────────────────────────────────── */
@@ -587,19 +636,26 @@
 
     /* ── Menu loading ────────────────────────────────────────── */
     async function getTodayMenuItems() {
-      const today = getISTDate();
-      const cache = JSON.parse(localStorage.getItem('dailyMenus') || '{}');
+      const today   = getISTDate();
+      const meal    = getCurrentMealType();
+      const cacheKey = `${today}_${meal}`;
+      const cache   = JSON.parse(localStorage.getItem('dailyMenus') || '{}');
+
+      // Update meal badge
+      const badge = document.getElementById('meal-badge-text');
+      if (badge) badge.textContent = meal.charAt(0).toUpperCase() + meal.slice(1);
+
       try {
         if (typeof cloudFetchDailyMenu === 'function') {
-          const cloud = await cloudFetchDailyMenu(today);
+          const cloud = await cloudFetchDailyMenu(today, meal);
           if (cloud && cloud.length) {
-            cache[today] = cloud;
+            cache[cacheKey] = cloud;
             localStorage.setItem('dailyMenus', JSON.stringify(cache));
             return cloud;
           }
         }
       } catch (e) {}
-      return cache[today] || [];
+      return cache[cacheKey] || [];
     }
 
     /* ── Feedback count ──────────────────────────────────────── */
@@ -634,6 +690,7 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
       initFeedbackCount();
+      scheduleNextReload();
       const items = await getTodayMenuItems();
       if (items.length) {
         buildLikedGrid(items);
