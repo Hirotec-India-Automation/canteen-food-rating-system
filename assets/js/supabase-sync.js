@@ -199,13 +199,27 @@ async function cloudUpsertDailyMenu(date, items, mealType = 'lunch') {
 async function cloudFetchDailyMenu(date, mealType = 'lunch') {
   try {
     if (!navigator.onLine) throw new Error("offline");
+
+    // Try with meal_type filter first (new schema)
     const { data, error } = await sbClient
       .from("daily_menu")
       .select("items")
       .eq("menu_date", date)
       .eq("meal_type", mealType)
       .maybeSingle();
-    if (error) throw error;
+
+    // If the column doesn't exist yet (PGRST error or similar), fall back to
+    // querying without meal_type so old-schema deployments keep working
+    if (error) {
+      const { data: fallback, error: err2 } = await sbClient
+        .from("daily_menu")
+        .select("items")
+        .eq("menu_date", date)
+        .maybeSingle();
+      if (err2) throw err2;
+      return fallback ? fallback.items : null;
+    }
+
     return data ? data.items : null;
   } catch (err) {
     return null;
