@@ -22,11 +22,10 @@
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       background: linear-gradient(135deg, #4facfe, #00f2fe);
-      color: #000;
     }
     .hidden { display: none !important; }
 
-    /* ---------- Fixed overlays ---------- */
+    /* ── Fixed overlays ─────────────────────────────────────── */
     .ist-clock {
       position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
       background: rgba(255,255,255,.85); padding: 8px 18px; border-radius: 18px;
@@ -64,34 +63,31 @@
       font-size: 13px; color: #5a6b7c; font-weight: 600; white-space: nowrap;
     }
 
-    /* ---------- Rating card ---------- */
-    .rating-card {
-      background: #fff;
-      border-radius: 28px;
+    /* ── Rating card (screen 1) ─────────────────────────────── */
+    #screen-rating {
+      background: #fff; border-radius: 28px;
       box-shadow: 0 12px 32px rgba(20,60,100,.22);
       padding: 40px 48px 32px;
       display: flex; flex-direction: column; align-items: center;
-      gap: 0;
       max-width: 95vw;
     }
-    .rating-card h1 {
+    #screen-rating h1 {
       font-size: clamp(24px, 4vw, 42px);
       color: #123a5c; font-weight: 700; text-align: center; margin-bottom: 6px;
     }
-    .rating-card .subtitle {
+    #screen-rating .subtitle {
       font-size: clamp(15px, 2vw, 20px);
       color: #5a6b7c; text-align: center; margin-bottom: 32px;
     }
     .rating-row {
       display: flex; flex-wrap: nowrap;
       justify-content: center; align-items: center;
-      gap: clamp(16px, 4vw, 48px);
-      margin-bottom: 28px;
+      gap: clamp(16px, 4vw, 56px); margin-bottom: 28px;
     }
     .emoji-btn {
       border: none; background: transparent; cursor: pointer;
-      width: clamp(100px, 26vw, 220px);
-      height: clamp(100px, 26vw, 220px);
+      width: clamp(110px, 26vw, 230px);
+      height: clamp(110px, 26vw, 230px);
       border-radius: 50%; padding: 12px;
       transition: transform .15s ease, background-color .15s ease;
       touch-action: manipulation;
@@ -99,33 +95,165 @@
     .emoji-btn img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
     .emoji-btn:active { transform: scale(1.1); background-color: #cfe6fb; }
     .emoji-btn.picked { transform: scale(1.18); background-color: #007bff; }
-    .rating-card .hint {
-      font-size: clamp(14px, 1.6vw, 18px); color: #7a8a99; text-align: center; margin-bottom: 0;
+    #screen-rating .hint {
+      font-size: clamp(14px, 1.6vw, 18px); color: #7a8a99; text-align: center;
     }
 
-    /* ---------- Thank you ---------- */
+    /* ── Selection screens (liked / reasons) ────────────────── */
+    .sel-screen {
+      display: none; flex-direction: column;
+      width: 100%; height: 100%;
+      padding: 62px 120px 16px;           /* side padding leaves room for fixed buttons */
+      animation: fadeIn .22s ease;
+    }
+    .sel-screen.active { display: flex; }
+    .sel-screen h1 {
+      font-size: clamp(20px, 3.2vw, 32px);
+      color: #fff; font-weight: 700; text-align: center; margin-bottom: 4px;
+    }
+    .sel-screen .subtitle {
+      font-size: clamp(13px, 1.8vw, 18px);
+      color: rgba(255,255,255,.85); text-align: center; margin-bottom: 14px;
+    }
+
+    /* White card containing the chips */
+    .sel-card {
+      background: #fff; border-radius: 18px;
+      box-shadow: 0 6px 20px rgba(20,60,100,.14);
+      padding: 16px 20px;
+      flex: 1; min-height: 0;
+      overflow: hidden;                   /* no scroll — everything must fit */
+      display: flex; flex-direction: column; gap: 10px;
+    }
+
+    /* ── "What did you love/like?" — food items as big chips ── */
+    #liked-grid {
+      display: flex; flex-wrap: wrap;
+      gap: 10px; align-content: center; justify-content: center;
+      height: 100%;
+    }
+    .food-chip {
+      display: inline-flex; align-items: center; gap: 10px;
+      border: 2px solid #c4d4e3; background: #f7fbff; color: #33475b;
+      border-radius: 999px; padding: 10px 22px;
+      font-size: clamp(15px, 1.8vw, 20px); font-weight: 600; cursor: pointer;
+      transition: background .12s, border-color .12s, color .12s;
+      touch-action: manipulation; white-space: nowrap;
+    }
+    .food-chip .fc-check {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid #b9cbdc; background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: 13px; color: transparent;
+    }
+    .food-chip.on { background: #007bff; border-color: #007bff; color: #fff; }
+    .food-chip.on .fc-check { background: rgba(255,255,255,.3); border-color: transparent; color: #fff; }
+
+    /* ── "Help us improve" — food columns, reason chips inside ─ */
+    #reason-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px; height: 100%; align-content: stretch;
+    }
+    .reason-col {
+      background: #f7fbff; border-radius: 12px;
+      border: 2px solid #eef3f8; padding: 10px 10px 12px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .reason-col.on { border-color: #007bff; background: #eaf5ff; }
+    .reason-col-name {
+      font-size: clamp(12px, 1.5vw, 15px); font-weight: 700;
+      color: #123a5c; text-align: center;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .reason-chips { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+    .r-chip {
+      border: 2px solid #c4d4e3; background: #fff; color: #33475b;
+      border-radius: 999px; padding: 5px 10px;
+      font-size: clamp(11px, 1.3vw, 13px); font-weight: 600; cursor: pointer;
+      transition: background .12s, color .12s, border-color .12s;
+      touch-action: manipulation; white-space: nowrap;
+    }
+    .r-chip:active { background: #e3f0fd; }
+    .r-chip.on { background: #007bff; border-color: #007bff; color: #fff; }
+
+    /* ── Fixed Skip (left) / Submit (right) buttons ─────────── */
+    #global-skip, #submit-wrap {
+      position: fixed; top: 50%; transform: translateY(-50%);
+      z-index: 50; display: none;
+    }
+    #global-skip { left: 0; }
+    #submit-wrap  { right: 0; }
+    #global-skip.visible, #submit-wrap.visible { display: flex; }
+
+    #global-skip {
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 4px; width: 100px; min-height: 110px;
+      background: #f0f4f8; border: none;
+      border-radius: 0 18px 18px 0;
+      box-shadow: 4px 0 12px rgba(0,0,0,.12);
+      cursor: pointer; font-size: 18px; font-weight: 700; color: #6a7b8c;
+      touch-action: manipulation; padding: 0 8px;
+      transition: background .15s, transform .1s;
+    }
+    #global-skip:active { background: #dde4ec; transform: translateY(-50%) scale(.96); }
+    .skip-cd { font-size: 26px; font-weight: 900; color: #ff9800; line-height: 1; }
+
+    #submit-wrap {
+      align-items: center; justify-content: center;
+      width: 120px; min-height: 120px;
+    }
+    #global-submit {
+      position: relative; width: 108px; height: 108px;
+      border: none; border-radius: 50%;
+      background: #007bff; color: #fff;
+      font-size: 16px; font-weight: 700; cursor: pointer;
+      touch-action: manipulation;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 2px;
+      box-shadow: -4px 0 12px rgba(0,0,0,.15);
+      transition: background .15s, transform .1s;
+    }
+    #global-submit:active { background: #005bab; transform: scale(.96); }
+    .submit-cd { font-size: 12px; font-weight: 600; opacity: .85; line-height: 1; }
+    .submit-ring {
+      position: absolute; inset: -6px;
+      width: calc(100% + 12px); height: calc(100% + 12px);
+      transform: rotate(-90deg); pointer-events: none;
+    }
+    .submit-ring-track { fill: none; stroke: rgba(255,255,255,.2); stroke-width: 5; }
+    .submit-ring-fill  {
+      fill: none; stroke: #fff; stroke-width: 5; stroke-linecap: round;
+      transition: stroke-dashoffset .95s linear;
+    }
+
+    /* ── Thank you ───────────────────────────────────────────── */
     #screen-thanks {
       display: none; flex-direction: column;
       align-items: center; justify-content: center; text-align: center;
     }
     #screen-thanks.active { display: flex; }
     #screen-thanks img { width: clamp(140px, 22vw, 220px); height: auto; margin-bottom: 20px; }
-    #thanks-msg { font-size: clamp(26px, 4.5vw, 48px); font-weight: 700; color: #fff; max-width: 800px; }
+    #thanks-msg {
+      font-size: clamp(24px, 4.5vw, 46px); font-weight: 700;
+      color: #fff; max-width: 820px;
+    }
 
     .app-footer {
       position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
-      font-size: 16px; font-weight: 600; color: #000; z-index: 20;
-      white-space: nowrap; pointer-events: none;
+      font-size: 16px; font-weight: 600; color: #000;
+      z-index: 20; white-space: nowrap; pointer-events: none;
     }
 
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-    .rating-card, #screen-thanks { animation: fadeIn .25s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
     @media (max-width: 640px) {
-      .rating-card { padding: 28px 20px 24px; }
-      .rating-card .subtitle { margin-bottom: 20px; }
-      .rating-row { gap: clamp(8px, 2vw, 20px); margin-bottom: 18px; }
-      #app-logo { height: 32px; }
+      #screen-rating { padding: 28px 20px 24px; }
+      .sel-screen { padding: 58px 88px 12px; }
+      #global-skip { width: 80px; min-height: 90px; font-size: 15px; }
+      .skip-cd { font-size: 20px; }
+      #global-submit { width: 86px; height: 86px; font-size: 14px; }
+      #submit-wrap { width: 96px; min-height: 96px; }
     }
   </style>
 </head>
@@ -141,53 +269,151 @@
     Today:&nbsp;<span id="feedback-count" style="font-size:18px;font-weight:800;color:#007bff;">0</span>
   </div>
 
-  <!-- Rating screen -->
-  <div id="screen-rating" class="rating-card">
+  <!-- 1. RATING -->
+  <div id="screen-rating">
     <h1>How was your meal today?</h1>
     <p class="subtitle">Tap a smiley to rate</p>
     <div class="rating-row" id="rating-row"></div>
     <p class="hint">Your feedback helps us serve you better</p>
   </div>
 
-  <!-- Thank you screen -->
+  <!-- 2. LIKED (rating 5) -->
+  <div id="screen-liked" class="sel-screen">
+    <h1 id="liked-title">What did you love?</h1>
+    <p class="subtitle">Tap the items you enjoyed</p>
+    <div class="sel-card">
+      <div id="liked-grid"></div>
+    </div>
+  </div>
+
+  <!-- 3. REASONS (rating 1) -->
+  <div id="screen-reasons" class="sel-screen">
+    <h1>Help us improve</h1>
+    <p class="subtitle">Tap the items that need attention</p>
+    <div class="sel-card">
+      <div id="reason-grid"></div>
+    </div>
+  </div>
+
+  <!-- 4. THANK YOU -->
   <div id="screen-thanks">
     <img id="thanks-img" src="images/5.png" alt="">
     <p id="thanks-msg">Thank you for your feedback!</p>
   </div>
 
+  <!-- Fixed side buttons (shown on selection screens) -->
+  <button id="global-skip" aria-label="Skip">
+    <span class="skip-cd" id="skip-cd">15</span>Skip
+  </button>
+  <div id="submit-wrap">
+    <button id="global-submit" aria-label="Submit">
+      Submit<span class="submit-cd" id="submit-cd">15s</span>
+    </button>
+    <!-- r=48 → circumference ≈ 301.6 -->
+    <svg class="submit-ring" viewBox="0 0 108 108" aria-hidden="true">
+      <circle class="submit-ring-track" cx="54" cy="54" r="48"/>
+      <circle class="submit-ring-fill"  cx="54" cy="54" r="48"
+              stroke-dasharray="301.6" stroke-dashoffset="301.6"
+              id="ring-fill"/>
+    </svg>
+  </div>
+
   <script src="assets/js/supabase-sync.js"></script>
   <script>
-    /* =========================================================
-       Simple 3-smiley main branch
-       — Tap a smiley → save → thank you → auto reset after 3 s
-       ========================================================= */
+    /* =============================================================
+       Flow:
+         Rating 5  → liked screen (optional, 15s auto-submit)
+         Rating 3  → save rating-only → thank you directly
+         Rating 1  → reasons screen (optional, 15s auto-submit)
+       ============================================================= */
 
-    // Always use IST date — toISOString() is UTC and flips at 18:30 IST
+    const IDLE_SECS   = 15;
+    const RING_CIRC   = 301.6;
+    const REASONS_LIST = ['Salty', 'Too Spicy', 'Undercooked', 'Overcooked', 'Not Fresh', 'Too Oily'];
+
+    let ratingValue   = null;
+    let advancing     = false;
+    let currentScreen = null;
+    let idleInterval  = null;
+    let idleSecsLeft  = IDLE_SECS;
+    let todayCount    = 0;
+    let completionAudioContext = null;
+
+    // Elements
+    const screenRating  = document.getElementById('screen-rating');
+    const screenLiked   = document.getElementById('screen-liked');
+    const screenReasons = document.getElementById('screen-reasons');
+    const screenThanks  = document.getElementById('screen-thanks');
+    const thanksImg     = document.getElementById('thanks-img');
+    const thanksMsg     = document.getElementById('thanks-msg');
+    const adminLink     = document.getElementById('admin-link');
+    const likedGrid     = document.getElementById('liked-grid');
+    const reasonGrid    = document.getElementById('reason-grid');
+    const globalSkip    = document.getElementById('global-skip');
+    const submitWrap    = document.getElementById('submit-wrap');
+    const globalSubmit  = document.getElementById('global-submit');
+    const skipCd        = document.getElementById('skip-cd');
+    const submitCd      = document.getElementById('submit-cd');
+    const ringFill      = document.getElementById('ring-fill');
+    const feedbackCountEl = document.getElementById('feedback-count');
+
+    const TIMED = ['screen-liked', 'screen-reasons'];
+
+    /* ── IST date ────────────────────────────────────────────── */
     function getISTDate() {
       return new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
       }).format(new Date());
     }
 
-    let ratingValue = null;
-    let advancing   = false;
-    let completionAudioContext = null;
+    /* ── Screen management ───────────────────────────────────── */
+    function showScreen(id) {
+      [screenRating, screenLiked, screenReasons, screenThanks].forEach(el => {
+        el.classList.remove('active');
+        if (el.id === 'screen-rating') el.classList.toggle('hidden', id !== 'screen-rating');
+      });
+      if (id !== 'screen-rating') document.getElementById(id).classList.add('active');
 
-    const ratingCard  = document.getElementById('screen-rating');
-    const screenThanks = document.getElementById('screen-thanks');
-    const thanksImg   = document.getElementById('thanks-img');
-    const thanksMsg   = document.getElementById('thanks-msg');
-    const adminLink   = document.getElementById('admin-link');
-    const feedbackCountEl = document.getElementById('feedback-count');
-    let todayCount = 0;
+      adminLink.classList.toggle('hidden', TIMED.includes(id));
+      document.getElementById('app-logo').classList.toggle('hidden', id === 'screen-reasons');
 
-    /* ---------- Build 3 smileys: bad (1), neutral (3), good (5) ---------- */
+      const timed = TIMED.includes(id);
+      globalSkip.classList.toggle('visible', timed);
+      submitWrap.classList.toggle('visible', timed);
+      if (timed) { currentScreen = id; startIdle(id); }
+      else        { stopIdle(); currentScreen = null; }
+    }
+
+    /* ── Idle timer ──────────────────────────────────────────── */
+    function updateTimerUI(secs) {
+      skipCd.textContent   = secs;
+      submitCd.textContent = secs + 's';
+      ringFill.style.strokeDashoffset = RING_CIRC * (secs / IDLE_SECS);
+    }
+    function startIdle(screenId) {
+      stopIdle();
+      idleSecsLeft = IDLE_SECS;
+      updateTimerUI(idleSecsLeft);
+      idleInterval = setInterval(() => {
+        idleSecsLeft = Math.max(0, idleSecsLeft - 1);
+        updateTimerUI(idleSecsLeft);
+        if (idleSecsLeft <= 0) {
+          stopIdle();
+          screenId === 'screen-liked' ? submitLiked() : submitReasons();
+        }
+      }, 1000);
+    }
+    function stopIdle() {
+      clearInterval(idleInterval); idleInterval = null;
+    }
+    // Any tap resets the countdown
+    document.addEventListener('pointerdown', () => {
+      if (currentScreen) startIdle(currentScreen);
+    }, true);
+
+    /* ── Rating buttons ──────────────────────────────────────── */
     const ratingRow = document.getElementById('rating-row');
-    const SMILEYS = [
-      { v: 1, label: 'Bad'     },
-      { v: 3, label: 'Neutral' },
-      { v: 5, label: 'Good'    }
-    ];
+    const SMILEYS = [{ v: 1, label: 'Bad' }, { v: 3, label: 'Neutral' }, { v: 5, label: 'Good' }];
     SMILEYS.forEach(({ v, label }) => {
       const btn = document.createElement('button');
       btn.className = 'emoji-btn';
@@ -199,39 +425,128 @@
 
     function pickRating(v, btn) {
       if (advancing) return;
-      advancing    = true;
-      ratingValue  = v;
-      primeAudio();
-      btn.classList.add('picked');
+      advancing = true; ratingValue = v;
+      primeAudio(); btn.classList.add('picked');
       setTimeout(() => {
-        saveFeedback();
-        showThanks();
+        if (v === 5) {
+          document.getElementById('liked-title').textContent = 'What did you love?';
+          showScreen('screen-liked');
+        } else if (v === 1) {
+          showScreen('screen-reasons');
+        } else {
+          // Neutral (3) — save and go straight to thanks
+          saveRatingOnly(); showThanks();
+        }
       }, 500);
     }
 
-    /* ---------- Save ---------- */
-    function saveFeedback() {
+    /* ── Skip / Submit buttons ───────────────────────────────── */
+    globalSkip.addEventListener('click', () => {
+      stopIdle(); saveRatingOnly(); showThanks();
+    });
+    globalSubmit.addEventListener('click', () => {
+      stopIdle();
+      currentScreen === 'screen-liked' ? submitLiked() : submitReasons();
+    });
+
+    /* ── Data saving ─────────────────────────────────────────── */
+    function appendLocal(key, data) {
+      const arr = JSON.parse(localStorage.getItem(key) || '[]');
+      arr.push(data); localStorage.setItem(key, JSON.stringify(arr));
+    }
+    function cloudSafe(rows) {
+      if (typeof cloudSaveFeedback === 'function') cloudSaveFeedback(rows);
+    }
+    function saveRatingOnly() {
       const date = getISTDate();
-      const existing = JSON.parse(localStorage.getItem('canteenFeedback') || '[]');
-      existing.push({ date, rating: ratingValue });
-      localStorage.setItem('canteenFeedback', JSON.stringify(existing));
-      if (typeof cloudSaveFeedback === 'function') {
-        cloudSaveFeedback([{ feedback_date: date, rating: ratingValue, feedback_type: 'rating_only' }]);
-      }
+      appendLocal('canteenFeedback', { date, rating: ratingValue });
+      cloudSafe([{ feedback_date: date, rating: ratingValue, feedback_type: 'rating_only' }]);
+    }
+    function saveLiked(items) {
+      const date = getISTDate();
+      appendLocal('canteenFeedback', { date, rating: ratingValue, goodFood: items });
+      cloudSafe(items.map(food_item => ({
+        feedback_date: date, rating: ratingValue, feedback_type: 'good_food', food_item
+      })));
+    }
+    function saveReasons(reasons) {
+      const date = getISTDate();
+      appendLocal('canteenFeedback', { date, rating: ratingValue, reasons });
+      cloudSafe(reasons.map(r => ({
+        feedback_date: date, rating: ratingValue, feedback_type: 'reason',
+        food_item: r.foodItem, reason: r.reason
+      })));
     }
 
-    /* ---------- Thank you + reset ---------- */
+    /* ── Submit actions ──────────────────────────────────────── */
+    function submitLiked() {
+      const items = [...likedGrid.querySelectorAll('.food-chip.on')].map(c => c.dataset.item);
+      items.length ? saveLiked(items) : saveRatingOnly();
+      showThanks();
+    }
+    function submitReasons() {
+      const picked = [];
+      reasonGrid.querySelectorAll('.reason-col').forEach(col => {
+        col.querySelectorAll('.r-chip.on').forEach(chip =>
+          picked.push({ foodItem: col.dataset.food, reason: chip.dataset.reason }));
+      });
+      picked.length ? saveReasons(picked) : saveRatingOnly();
+      showThanks();
+    }
+
+    /* ── Build food selection screens ────────────────────────── */
+    function buildLikedGrid(items) {
+      likedGrid.innerHTML = '';
+      items.forEach(item => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'food-chip';
+        chip.dataset.item = item;
+        chip.innerHTML = `<span class="fc-check"><i class="fas fa-check"></i></span>${item}`;
+        chip.addEventListener('click', () => chip.classList.toggle('on'));
+        likedGrid.appendChild(chip);
+      });
+    }
+
+    function buildReasonGrid(items) {
+      reasonGrid.innerHTML = '';
+      items.forEach(item => {
+        const col = document.createElement('div');
+        col.className = 'reason-col';
+        col.dataset.food = item;
+        const name = document.createElement('div');
+        name.className = 'reason-col-name';
+        name.textContent = item;
+        const chips = document.createElement('div');
+        chips.className = 'reason-chips';
+        REASONS_LIST.forEach(r => {
+          const chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = 'r-chip';
+          chip.dataset.reason = r;
+          chip.textContent = r;
+          chip.addEventListener('click', () => {
+            chip.classList.toggle('on');
+            col.classList.toggle('on', !!col.querySelector('.r-chip.on'));
+          });
+          chips.appendChild(chip);
+        });
+        col.appendChild(name);
+        col.appendChild(chips);
+        reasonGrid.appendChild(col);
+      });
+    }
+
+    /* ── Thank you + reset ───────────────────────────────────── */
     function primeAudio() {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) return;
       if (!completionAudioContext) completionAudioContext = new Ctx();
       if (completionAudioContext.state === 'suspended') completionAudioContext.resume();
     }
-
     function playSound() {
       primeAudio();
-      const ctx = completionAudioContext;
-      if (!ctx) return;
+      const ctx = completionAudioContext; if (!ctx) return;
       const now = ctx.currentTime;
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(0.0001, now);
@@ -256,26 +571,42 @@
       thanksMsg.textContent = msgs[ratingValue] || 'Thank you for your feedback!';
       playSound();
       incrementFeedbackCount();
-      ratingCard.classList.add('hidden');
-      adminLink.classList.add('hidden');
-      screenThanks.classList.add('active');
+      showScreen('screen-thanks');
       setTimeout(resetToRating, 3000);
     }
 
     function resetToRating() {
-      ratingValue = null; advancing = false;
+      stopIdle();
+      ratingValue = null; advancing = false; currentScreen = null;
       document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('picked'));
-      screenThanks.classList.remove('active');
-      ratingCard.classList.remove('hidden');
-      adminLink.classList.remove('hidden');
+      likedGrid.querySelectorAll('.food-chip.on').forEach(c => c.classList.remove('on'));
+      reasonGrid.querySelectorAll('.r-chip.on').forEach(c => c.classList.remove('on'));
+      reasonGrid.querySelectorAll('.reason-col.on').forEach(c => c.classList.remove('on'));
+      showScreen('screen-rating');
     }
 
-    /* ---------- Feedback count ---------- */
+    /* ── Menu loading ────────────────────────────────────────── */
+    async function getTodayMenuItems() {
+      const today = getISTDate();
+      const cache = JSON.parse(localStorage.getItem('dailyMenus') || '{}');
+      try {
+        if (typeof cloudFetchDailyMenu === 'function') {
+          const cloud = await cloudFetchDailyMenu(today);
+          if (cloud && cloud.length) {
+            cache[today] = cloud;
+            localStorage.setItem('dailyMenus', JSON.stringify(cache));
+            return cloud;
+          }
+        }
+      } catch (e) {}
+      return cache[today] || [];
+    }
+
+    /* ── Feedback count ──────────────────────────────────────── */
     function incrementFeedbackCount() {
       todayCount++;
       feedbackCountEl.textContent = todayCount;
     }
-
     function initFeedbackCount() {
       const today = getISTDate();
       const local = JSON.parse(localStorage.getItem('canteenFeedback') || '[]');
@@ -290,7 +621,7 @@
       }
     }
 
-    /* ---------- IST clock ---------- */
+    /* ── IST clock ───────────────────────────────────────────── */
     const istClock = document.getElementById('ist-clock');
     const istFmt = new Intl.DateTimeFormat('en-IN', {
       timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric',
@@ -300,7 +631,15 @@
     tickClock(); setInterval(tickClock, 1000);
 
     document.addEventListener('contextmenu', e => e.preventDefault());
-    document.addEventListener('DOMContentLoaded', initFeedbackCount);
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      initFeedbackCount();
+      const items = await getTodayMenuItems();
+      if (items.length) {
+        buildLikedGrid(items);
+        buildReasonGrid(items);
+      }
+    });
   </script>
 
   <div class="app-footer">Built with <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle;display:inline-block;margin:0 2px"><path fill="#e03535" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> by <strong>Hirotec Team India</strong></div>
