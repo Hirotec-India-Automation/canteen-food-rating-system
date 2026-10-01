@@ -22,6 +22,8 @@ Feedback and the daily menu are now backed by a Supabase Postgres database, in a
 
 Run [`supabase/schema.sql`](supabase/schema.sql) once in your Supabase project's SQL editor to create these tables (RLS is enabled with permissive policies since this app has no server-side auth — see the caveat in the schema file).
 
+If menu writes fail with `duplicate key value violates unique constraint "daily_menu_menu_date_key"`, run [`supabase/fix_daily_menu_meal_uniqueness.sql`](supabase/fix_daily_menu_meal_uniqueness.sql) in the Supabase SQL Editor. This removes the old date-only unique constraint and allows one lunch and one dinner row per date. Failed menu writes remain queued in the browser and retry automatically after the database migration succeeds.
+
 The client config lives in [`assets/js/supabase-sync.js`](assets/js/supabase-sync.js), shared by `FoodRating.html` and `menu.html`. Update `SUPABASE_URL` / `SUPABASE_ANON_KEY` there if you point this at a different Supabase project.
 
 **Offline-first behavior:** every write (feedback submission, menu update, food item add/delete) is saved to `localStorage` immediately and also attempted against Supabase. If the browser is offline or the request fails, the write is queued in `localStorage` (`pendingSupabaseOps`) and automatically retried the next time the browser comes back online or the page reloads. A small badge in the top-left corner of each page shows the current connection/sync status.

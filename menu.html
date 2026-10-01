@@ -728,7 +728,7 @@
 			});
 		}
 
-		function submitMenu() {
+		async function submitMenu() {
 			const selectedDate = selectedDateElement.value;
 			const selectedItems = Array.from(document.querySelectorAll('.food-checkbox:checked')).map(checkbox => checkbox.value);
 
@@ -739,8 +739,18 @@
 			const key = mealKey(selectedDate, currentMealType);
 			dailyMenus[key] = selectedItems;
 			localStorage.setItem('dailyMenus', JSON.stringify(dailyMenus));
-			cloudUpsertDailyMenu(selectedDate, selectedItems, currentMealType);
-			alert(`${currentMealType.charAt(0).toUpperCase()+currentMealType.slice(1)} menu for ${selectedDate} has been updated!`);
+			const saved = await cloudUpsertDailyMenu(selectedDate, selectedItems, currentMealType);
+			if (saved) {
+				alert(`${currentMealType.charAt(0).toUpperCase()+currentMealType.slice(1)} menu for ${selectedDate} has been saved.`);
+			} else {
+				const syncError = getLastSupabaseError();
+				const detail = syncError && syncError.message ? `\n\n${syncError.message}` : '';
+				if (syncError && syncError.code === '23505' && String(syncError.message).includes('daily_menu_menu_date_key')) {
+					alert(`Menu saved on this device and queued for sync, but the database still has its old date-only menu constraint.${detail}\n\nRun supabase/fix_daily_menu_meal_uniqueness.sql in the Supabase SQL Editor. The queued update will retry after that migration succeeds.`);
+				} else {
+					alert(`Menu saved on this device and queued for sync. It will retry when the connection is available.${detail}`);
+				}
+			}
 		}
 
 		function selectAll(checkbox) {
