@@ -200,6 +200,20 @@ async function cloudFetchDailyMenu(date, mealType = 'lunch') {
   }
 }
 
+async function cloudFetchAllDailyMenus() {
+  try {
+    if (!navigator.onLine) throw new Error("offline");
+    const { data, error } = await sbClient
+      .from("daily_menu")
+      .select("menu_date,meal_type,items,updated_at")
+      .order("menu_date", { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    return null;
+  }
+}
+
 // ---------- Food Catalog ----------
 async function cloudUpsertFoodItem(name) {
   return saveOrQueue({
