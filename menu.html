@@ -489,7 +489,7 @@
 			<input type="file" id="menu-upload" accept=".csv,.xlsx,.xls" />
 			<button type="button" onclick="downloadMenuTemplate()">Download Excel template</button>
 			<button type="button" id="upload-menu-btn" onclick="uploadMenuFile()">Upload menus</button>
-			<div class="upload-help">Use one row per food item with <b>Date</b> and <b>Food Item</b>. The current template needs no Meal Type column and imports as lunch; add an optional <b>Meal Type</b> column with lunch or dinner when needed. All dates in the file are uploaded.</div>
+			<div class="upload-help">Use one row per food item with <b>Date</b> and <b>Food Item</b>. The downloaded template keeps dates as YYYY-MM-DD text. Excel date cells are read from their stored date value even if displayed as DD-MM-YYYY. The current template defaults to lunch; add an optional <b>Meal Type</b> column with lunch or dinner when needed.</div>
 			<div id="upload-status" role="status" aria-live="polite"></div>
 		</div>
 
@@ -996,16 +996,18 @@
 				{ Date: secondDate, 'Meal Type': 'lunch',  'Food Item': 'Chutney' }
 			];
 			const worksheet = XLSX.utils.json_to_sheet(sampleRows);
+			worksheet['!cols'] = [{ wch: 14 }, { wch: 16 }, { wch: 34 }];
+			for (let row = 2; row <= sampleRows.length + 1; row++) {
+				const dateCell = worksheet[`A${row}`];
+				if (dateCell) dateCell.z = '@';
+			}
 			const workbook = XLSX.utils.book_new();
 			XLSX.utils.book_append_sheet(workbook, worksheet, 'Menu');
 			XLSX.writeFile(workbook, 'menu_template.xlsx');
 		}
 
-		// Excel serial dates are read back as JS Date objects (cellDates:true); everything else stays text
+		// Normalize Excel serial dates or ISO / day-first date text without timezone conversion.
 		function normalizeTemplateDate(value) {
-			if (value instanceof Date) {
-				return localDateInputValue(value);
-			}
 			if (typeof value === 'number' && Number.isFinite(value)) {
 				const parts = XLSX.SSF.parse_date_code(value);
 				return parts ? `${parts.y}-${String(parts.m).padStart(2, '0')}-${String(parts.d).padStart(2, '0')}` : '';
@@ -1018,9 +1020,13 @@
 				return candidate.getFullYear() === Number(year) && candidate.getMonth() === Number(month) - 1 && candidate.getDate() === Number(day)
 					? `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}` : '';
 			}
-			const usDate = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-			if (usDate) {
-				const [, month, day, year] = usDate;
+			const localized = text.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+			if (localized) {
+				let [, first, second, year] = localized;
+				let day, month;
+				if (Number(first) > 12) { day = first; month = second; }
+				else if (Number(second) > 12) { month = first; day = second; }
+				else { day = first; month = second; } // Ambiguous text dates use the canteen's day-first format.
 				const candidate = new Date(Number(year), Number(month) - 1, Number(day));
 				return candidate.getFullYear() === Number(year) && candidate.getMonth() === Number(month) - 1 && candidate.getDate() === Number(day)
 					? `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}` : '';
@@ -1039,7 +1045,8 @@
 			uploadStatus.textContent = 'Reading file…';
 			try {
 			const data = await file.arrayBuffer();
-			const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+			// Keep Excel dates as serial numbers so locale display formats never shift the calendar date.
+			const workbook = XLSX.read(data, { type: 'array', cellDates: false });
 			const sheet = workbook.Sheets[workbook.SheetNames[0]];
 			if (!sheet) throw new Error('The selected file has no worksheet.');
 			const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
